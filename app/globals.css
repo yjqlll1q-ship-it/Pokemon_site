@@ -339,6 +339,23 @@
   color: color-mix(in srgb, var(--color-yellow) 62%, #3a3222);
 }
 
+/* --- 背景设置面板里的提示条 ---
+   同一套「低饱和色做浅底 + 同色系深字」的配方，和 badge-baby 一致。
+   用 @utility 而不是在 TSX 里写 bg-[color-mix(in_srgb,...)]：
+   任意值写法里空格要转下划线，还容易拼错且拼错了是静默失效。 */
+
+/* 硬性不通过（格式/体积/尺寸不合格） */
+@utility note-error {
+  background-color: color-mix(in srgb, var(--color-red) 12%, #fff);
+  color: color-mix(in srgb, var(--color-red) 78%, #3a1f1b);
+}
+
+/* 能用但值得提醒（例如宽度低于建议值） */
+@utility note-warn {
+  background-color: color-mix(in srgb, var(--color-yellow) 18%, #fff);
+  color: color-mix(in srgb, var(--color-yellow) 62%, #3a3222);
+}
+
 /* 种族值进度条的填充 */
 @utility tint-bar {
   background-color: color-mix(in srgb, var(--tint) 62%, #fff);

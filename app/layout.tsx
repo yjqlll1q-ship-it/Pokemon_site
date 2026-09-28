@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
+import SiteBackground from '@/components/SiteBackground';
 import { SITE } from '@/lib/site';
 import './globals.css';
 
@@ -15,6 +16,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
+        {/* 背景层是 body 的负 z-index 子元素，自身即铺满视口，不影响 header/main/footer 的布局 */}
+        <SiteBackground />
         <SiteHeader />
         {children}
         <SiteFooter />

@@ -50,6 +50,7 @@ next-env.d.ts
 /baseline-*.json
 /style-snapshot*.json
 /style-diff-report.md
+/style-diff-current.md
 
 # tailwind 单层编译产物（npm run tw:compile）
 /tools/tw-out.css

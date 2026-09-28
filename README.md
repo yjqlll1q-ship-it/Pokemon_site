@@ -4,6 +4,8 @@
 
 1. **首页「最初的伙伴」** —— 点击宝可梦 → 弹出属性面板与完整进化分支（静态预渲染）。
 2. **图鉴查询** —— 前三个世代全部 386 只，按属性 / 世代 / 种族值 / 特性 / 蛋群多条件搜索、排序、分页（走本地 SQLite）。
+3. **自定义网页背景** —— 右下角浮动控件，选一张本地图片当整站背景（可调铺法 / 不透明度 / 模糊 / 淡化）。
+   图片**只存在浏览器本地**（IndexedDB），不上传、不进仓库、不进构建产物。
 
 - 框架：Next.js 16（App Router）+ React 19 + TypeScript
 - 样式：**Tailwind CSS v4**（`@theme` 定义设计 token，`@utility` 收口复合样式）+ 一套设计变量
@@ -68,6 +70,8 @@ npm run dev          # http://localhost:3000
 | `npm run ui:check` | 首页端到端（需先起服务）：点开 → 属性 + 全部进化分支 |
 | `npm run pokedex:check` | 图鉴查询页端到端（需先起服务）：搜索 / 筛选 / 排序 / 分页 / 弹窗 / 深链还原 / 移动端 |
 | `npm run api:check` | 4 个 API 路由的端到端（需先起服务）；加 `--self-test` 可做反向验证 |
+| `npm run bg:check` | 背景功能端到端（需先起服务）：坏文件拦截 / 参数生效 / 刷新后仍在 / 移除还原 / 移动端；设 `BG_TEST_IMAGE=<绝对路径>` 用真图再跑一遍 |
+| `npm run style:regress` | 非破坏性样式回归：把当前状态快照成 `style-snapshot.json`，与 `baseline-current.json` 比对（**不会覆盖** `baseline-after.json`） |
 
 > `ui:check` / `pokedex:check` 都用本机 Chrome/Edge 走 CDP 驱动真实浏览器，断言口径是
 > 「用户能不能做到这件事」而不是「代码有没有执行」，同时输出截图到 `shots/`。
@@ -88,7 +92,7 @@ npm run dev          # http://localhost:3000
 ```
 start.bat dev.bat stop.bat    Windows 双击入口（跳板，逻辑在 tools/launch.ps1）
 app/
-  layout.tsx           全站骨架（顶栏 + 页脚）
+  layout.tsx           全站骨架（顶栏 + 页脚 + 背景层/控件挂载点）
   page.tsx             首页：读静态数据 → 交给交互组件（静态预渲染）
   pokedex/page.tsx     图鉴查询页外壳（静态），交互全在 PokedexQuery 里
   api/pokedex/route.ts         GET 多条件搜索
@@ -105,6 +109,7 @@ components/
   PokemonDetail.tsx    弹窗内容：属性面板 + 进化区
   EvolutionTree.tsx    进化链渲染（单线横向 / 有分支自动转缩进树）
   Modal.tsx            通用弹窗外壳：Esc、遮罩点击、滚动锁、焦点管理
+  SiteBackground.tsx   自定义背景：背景层 + 右下角浮动控件（客户端组件）
   TypeBadge.tsx  StatBars.tsx  SiteHeader.tsx  SiteFooter.tsx
 lib/
   pokedex.ts           静态数据的唯一入口 + 进化线派生计算（服务端专用）
@@ -113,6 +118,7 @@ lib/
   api-types.ts         前后端共用的契约类型（**只有类型，没有值**）
   evolution.ts         进化树的纯计算（不 import 任何数据，客户端组件要用）
   typeColors.ts        属性 → CSS 变量映射
+  siteBackground.ts    背景功能：格式/体积/像素校验、IndexedDB 图片存取、设置持久化（**仅客户端**）
   site.ts              站名与导航配置
 data/
   pokedex.json         生成物：430 只（范围内 386）+ 202 条进化线 + 18 属性
@@ -129,6 +135,7 @@ tools/
   ui-check.cjs         首页端到端 + 截图（38 项）
   pokedex-check.cjs    查询页端到端 + 截图（53 项）
   api-check.cjs        API 端到端（72 项，含 --self-test 反向验证）
+  bg-check.cjs         背景功能端到端 + 截图（49 项，带真图 53 项）
   tw-compile.cjs       只编译 Tailwind 一层
   tw-audit.cjs         审计「写了但没生成」的 utility
   style-snapshot.cjs   采集关键元素的计算样式 → JSON
@@ -260,6 +267,40 @@ npm run data && npm run data:check
 
 ---
 
+## 自定义网页背景
+
+右下角常驻一个控制按钮，点开可以选一张本地图片当整站背景。限制不是自己拍的，是对着别家同类功能定的：
+
+| 项 | 取值 | 依据 |
+| --- | --- | --- |
+| 体积上限 | **5 MB** | 爱数系统图片配置、Zaveit 自定义页都是 5 MB；SiteSwan / Cloudflare Images 放到 10 MB。取严的一档 |
+| 接受格式 | jpg / jpeg / png / webp / gif / avif / bmp，`accept` 与校验层同源 | 上述几家的合集；**不收 SVG**（能内嵌脚本，当背景也没有任何优点） |
+| 像素上限 | 单边 ≤ 12000px | 对齐 Cloudflare Images，防止手机原图把内存打爆 |
+| 建议宽度 | ≥ 1920px，不足只提示不拦 | 铺满会发虚，但那是用户的取舍 |
+| 落地形态 | 原文件存 IndexedDB，设置存 localStorage | 纯客户端：不上传、不进仓库、不进 `.next` 产物。换浏览器/换机器就是没有背景 |
+| 默认值 | 铺法 `cover` / 不透明度 100% / 模糊 0 / 淡化 52% | 淡化是压在图上的一层**纸色**（`--color-paper`），不是深色遮罩 —— 本站深字浅底，压暗底只会让正文更糊；深色遮罩是「白字压暗底」站点的惯例，套过来是反的 |
+
+三个已经用断言钉住的坑：
+
+1. **层必须真的能被看见**：背景层是 `fixed inset-0 -z-10`。`body` 有不透明纸色底，
+   一旦层被画到纸色之下，DOM 断言照样全绿、屏幕上一片空白。所以判据落在**像素**上：
+   开关 ON / OFF 两张截图跑 `pixel-diff`，实测 **54.80%** 像素变化（阈值 50%）——
+   若层被盖住，这个数只会等于右下角那个小按钮的面积（≈0.001%）。**这一对是正向对照，
+   「通过」的含义是差异足够大，与零回归的判定方向相反。**
+2. **坏文件不能顶掉上一张好图**：拒绝路径一律不写状态。测试里每拒绝一种坏文件
+   （超 5 MB / SVG / 伪装成 png 的文本 / 单边超 12000px），就复查一次现有背景还在。
+   另有一个坑是测试侧的：手写 PRNG 生成的「超大图」会被 deflate 压到几十 KB，
+   于是「超限应被拒绝」的用例静默失效 —— 改用 `crypto.randomBytes` 真随机像素才压不动。
+3. **滑块的测试写法**：React 给受控 input 挂了 value 拦截器，`el.value = '40'` 会被记成
+   「值没变」、`onChange` 不触发，症状看起来像「产品参数没生效」。必须走原生 setter + 派发
+   `input`/`change`（`bg-check.cjs` 里的 `SET_VAL`）。
+
+一个**不是 bug** 的观感问题值得记一笔：铺上照片后，卡片那一带会读成一大块白板。
+实测卡片带平均亮度只变 4.7，而左右留白区变 70.8 —— 因为卡片本身是不透明暖白、缝隙又窄，
+照片只在缝隙和留白处透出来。这是既有卡片设计在照片背景下的表现，不是背景层的问题。
+
+---
+
 ## 怎么验证（量化门禁）
 
 这套门禁有两个用途，同一套工具、两种口径：
@@ -279,6 +320,7 @@ npm run data && npm run data:check
 | 4 | `npm run api:check` | 4 个 API 路由的返回**是不是用户要的东西**（72 条：火属性筛选后每只都有火、世代人数 151/100/135、`025` 与 `0025` 都命中 #25、排序结果真的递减…） |
 | 5 | `npm run ui:check` | 首页功能是否可用（38 条：属性、9 形态 8 分支、跳转、返回、窄屏无横向滚动、hover 位移 3px / 缩放 1.045×） |
 | 6 | `npm run pokedex:check` | 查询页功能是否可用（53 条：搜索、属性筛选、世代+种族值+排序、分页不重叠、详情弹窗与进化树跳转、属性视图、深链还原、移动端） |
+| 6b | `npm run bg:check` | 背景功能是否可用（49 条，带真图 53 条：坏文件被挡且不顶掉好图、参数真的落到计算值、刷新后仍在、移除后干净还原、浮动控件不挡分页、移动端不溢出） |
 | 7 | `npm run style:snap` + `npm run style:diff` | 每个关键元素、每个计算属性的值是否逐项一致 |
 | 8 | `npm run px:diff` | 整屏每个像素是否一致（挑不出「没被第 7 层覆盖到」的差异） |
 
@@ -286,6 +328,12 @@ npm run data && npm run data:check
 改造后再存 `baseline-after.json`，然后 diff。采样刻意用 `data-testid` 与结构选择器、不用 class 名
 （class 名在改造前后会整体换掉，用它选就丧失可比性），属性也不做「等于默认值就丢弃」的过滤
 （那会让「某属性被打回默认值」这种最典型的回归正好隐身）。
+
+> **日常回归不要用 `npm run style:snap`。** 它按设计就是把当前状态覆盖写入 `baseline-after.json`，
+> 那是「CSS Modules → Tailwind」这一对 before/after 的专用产物。用 `npm run style:regress`：
+> 当前状态存进 `style-snapshot.json`，再和 `baseline-current.json` 比，两份历史基线都不动。
+> （这条是踩出来的 —— 用 style:snap 做了一次日常检查，把重构完成时的 `baseline-after.json`
+> 和 `style-diff-report.md` 覆盖掉了，靠 F 盘迁移前留下的旧副本才还原回去。）
 
 第 8 层用 `npm run px:diff a.png b.png diff.png 8`，`diff.png` 里红=超阈差异、灰=一致。
 Tailwind 改造后的实测结果：**6 张截图全部逐像素一致（最大通道差 0）**，文件大小也与基线逐一相同 ——
