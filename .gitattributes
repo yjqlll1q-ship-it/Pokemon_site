@@ -1,0 +1,21 @@
+# 换行统一策略。
+#
+# 源码一律 LF；Windows 批处理与 PowerShell 脚本必须保持 CRLF ——
+# cmd.exe 解析 LF-only 批处理时 goto :label / call :label 会失效或跳错位置，
+# 症状是「跑一半就退出」，而文件肉眼看起来完全正常。
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 二进制资源不做任何换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.db binary

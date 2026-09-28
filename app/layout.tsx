@@ -1,0 +1,24 @@
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
+import { SITE } from '@/lib/site';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: SITE.name,
+  description: SITE.description,
+};
+
+/* 字体刻意用系统字体栈（见 globals.css 的 @theme）：中文字形覆盖全、不依赖外网字体，构建也更快 */
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="zh-CN">
+      <body>
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
+    </html>
+  );
+}

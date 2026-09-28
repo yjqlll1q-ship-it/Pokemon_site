@@ -1,0 +1,397 @@
+/* ==========================================================================
+   app/globals.css —— Tailwind 入口 + 全站设计 token
+   --------------------------------------------------------------------------
+   本文件按顺序承担三件事：
+
+     1. @import 'tailwindcss'  引入 Tailwind 本体（含 preflight 重置）
+     2. @theme { ... }         声明设计 token，Tailwind 据此生成 utility
+     3. @utility / @layer base preflight 没覆盖的基线样式，
+                               以及「用 utility 表达不划算」的复合样式
+
+   改配色 / 圆角 / 阴影 / 字体，只在下面的 @theme 里改，全站生效。
+
+   配色依据（都是查到的现成参考，不是拍脑袋定的）：
+     1. 官方 Pokémon 品牌色：黄 #FFCB05 / 蓝 #3D7DCA / 深蓝 #003A70
+        （来源：brandpalettes.com/pokemon-color-codes）
+     2. 精灵球红 #EE1515（来源：schemecolor.com/pokemon-colors）
+     3. 属性色：Bulbapedia《Help:Color templates》的朱紫世代官方属性色
+     4. 降饱和手法：莫兰迪色系思路（饱和度压到 30%~45%、掺灰），
+        并参考了宝可梦同人站 ColorDex 的「混合色」版本
+        （来源：pokemonaaah.net/art/colordex）
+     => 结论：用官方色相 + 低饱和处理，做到「一眼是宝可梦，但不刺眼」。
+   ========================================================================== */
+
+@import 'tailwindcss';
+
+/* --------------------------------------------------------------------------
+   1. 设计 token
+   --------------------------------------------------------------------------
+   变量名按 Tailwind 的命名空间写，会自动长出对应 utility：
+     --color-*   → bg- / text- / border- / fill- ...
+     --radius-*  → rounded-*
+     --shadow-*  → shadow-*
+     --font-*    → font-*
+     --animate-* → animate-*
+   同时这些变量会被挂到 :root，供本文件第 3 节的 @utility 引用。
+
+   注意：这里覆盖了 Tailwind 默认的 --radius-md / --shadow-md，是为了让
+   rounded-md / shadow-md 直接用本项目的值，而不是 Tailwind 的默认值。
+   -------------------------------------------------------------------------- */
+@theme {
+  /* ---- 面（莫兰迪燕麦 / 米灰，避免纯白刺眼） ---- */
+  --color-paper: #f6f4ef;
+  --color-paper-soft: #efece4;
+  --color-surface: #fffdf9;
+  --color-surface-2: #f3f0e8;
+  --color-line: #e5e0d5;
+  --color-line-strong: #d3ccbd;
+
+  /* ---- 字（由品牌深蓝 #003A70 去饱和而来，保证长文可读） ---- */
+  --color-ink: #25313d;
+  --color-ink-2: #5a6673;
+  --color-ink-3: #8a929c;
+
+  /* ---- 品牌色（官方色相，降饱和 + 提亮） ---- */
+  --color-navy: #2c4a6b; /* ← #003A70 */
+  --color-blue: #6f9ac4; /* ← #3D7DCA */
+  --color-yellow: #d3b055; /* ← #FFCB05 */
+  --color-red: #c0574c; /* ← #EE1515 */
+
+  /* ---- 形体 ---- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 1px 2px rgba(37, 49, 61, 0.05), 0 2px 8px rgba(37, 49, 61, 0.04);
+  --shadow-md: 0 2px 6px rgba(37, 49, 61, 0.06), 0 12px 28px rgba(37, 49, 61, 0.08);
+  --shadow-lg: 0 8px 20px rgba(37, 49, 61, 0.1), 0 30px 60px rgba(37, 49, 61, 0.14);
+
+  /* ---- 排版（系统字体栈：中文字形覆盖全、不依赖外网字体，构建也更快） ---- */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+
+  /* ---- 弹窗动效 ---- */
+  --animate-fade: fade 0.18s ease-out;
+  --animate-rise: rise 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.99);
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. 属性色 + 焦点环
+   --------------------------------------------------------------------------
+   属性色只通过内联的 --tint 消费（见 lib/typeColors.ts），全程不按名字出现在
+   任何 CSS 规则里，所以放在普通 :root 而不是 @theme —— 避免被 Tailwind 的
+   「未使用主题变量不输出」优化裁掉，那样属性色会静默失效。
+   -------------------------------------------------------------------------- */
+:root {
+  --focus-ring: color-mix(in srgb, var(--color-navy) 55%, transparent);
+
+  /* 18 种属性，官方色相降饱和；只在这里维护一次 */
+  --type-normal: #8d8f86;
+  --type-fire: #d2724a;
+  --type-water: #4f8bc9;
+  --type-electric: #c9a83c;
+  --type-grass: #6aa85a;
+  --type-ice: #5fb0c4;
+  --type-fighting: #b85c48;
+  --type-poison: #9a5fa3;
+  --type-ground: #b08a4e;
+  --type-flying: #7f9cd0;
+  --type-psychic: #cf7093;
+  --type-bug: #93a349;
+  --type-rock: #a8955f;
+  --type-ghost: #75639b;
+  --type-dragon: #6169b5;
+  --type-dark: #6b5b58;
+  --type-steel: #7f97a8;
+  --type-fairy: #cd86a8;
+
+  /* 未知属性回退到中性灰，保证不会出现空样式 */
+  --type-fallback: var(--type-normal);
+}
+
+/* --------------------------------------------------------------------------
+   3a. 基线层
+   --------------------------------------------------------------------------
+   Tailwind 的 preflight 已经处理了 box-sizing、margin 归零、列表去符号、
+   img 的 display、button 的字体继承等，这里只补它没覆盖、或者本站特意要改回
+   来的部分。
+   -------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Modal 打开时锁住页面滚动 */
+  body[data-scroll-locked='true'] {
+    overflow: hidden;
+  }
+
+  /* preflight 会让 <a> 继承颜色并去掉下划线，这里恢复成本站要的样子 */
+  a {
+    color: var(--color-navy);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  /* Tailwind v4 的 preflight 把按钮光标改成了默认箭头，这里改回手型 */
+  button {
+    padding: 0;
+    cursor: pointer;
+  }
+
+  /* 统一焦点样式：键盘用户看得见，鼠标用户不受干扰 */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3b. 复合样式
+   --------------------------------------------------------------------------
+   下面这些不是「懒得写 utility」，而是四类 Tailwind 表达不好、或表达出来会出问题的东西：
+
+     A. 依赖每个元素自己的 --tint 做 color-mix 派生 —— TSX 里写成
+        bg-[color-mix(in_srgb,var(--tint)_15%,#fff)] 会又长又容易拼错，
+        而且拼错了是静默失效。抽成名字明确的 @utility 更好维护。
+     B. 带伪元素的自绘图形（精灵球、箭头、连线、光晕底座）。
+     C. 渐变的插值空间必须是 sRGB —— Tailwind v4 的 bg-linear-* 默认按
+        oklab 插值，同样的色标会渲染出不同的中间色，所以这里直接写
+        linear-gradient() 保证与改造前逐像素一致。
+     D. Tailwind 内置的复合 utility 依赖 var() 链，在本机 Chrome 上会静默
+        失效（详见 D 节说明），因此直写最终值。
+
+   颜色全部引用 @theme 里的变量，改配色依然只需要动 @theme。
+   -------------------------------------------------------------------------- */
+
+/* --- B/C：自绘图形与渐变 --- */
+
+/* 顶栏：底色是半透明纸色 + 背景模糊 */
+@utility header-veil {
+  background-color: color-mix(in srgb, var(--color-paper) 82%, transparent);
+}
+
+/* 弹窗遮罩：品牌深蓝去饱和后的低透明，配轻模糊，不压黑整个屏幕 */
+@utility modal-veil {
+  background-color: color-mix(in srgb, var(--color-ink) 34%, transparent);
+}
+
+/* 详情页立绘底板：上深下浅的极淡渐变 */
+@utility art-plate {
+  background-image: linear-gradient(180deg, var(--color-surface-2), var(--color-surface));
+}
+
+/* 顶栏的精灵球标识：纯 CSS 画（红 → 深蓝带 → 米白 + 中心点），不占图片资源 */
+@utility brand-mark {
+  position: relative;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--color-navy);
+  background-image: linear-gradient(
+    180deg,
+    var(--color-red) 0 44%,
+    var(--color-navy) 44% 56%,
+    var(--color-surface) 56% 100%
+  );
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 9px;
+    height: 9px;
+    margin: -4.5px 0 0 -4.5px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-navy);
+  }
+}
+
+/* 单线进化的箭头：一条线 + 一个旋转 45° 的小方块，避免塞图片资源 */
+@utility step-arrow {
+  position: relative;
+  width: 46px;
+  height: 1px;
+  background: var(--color-line-strong);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    border-top: 1px solid var(--color-line-strong);
+    border-right: 1px solid var(--color-line-strong);
+    transform: rotate(45deg);
+  }
+}
+
+/* 分支树：每个子节点从主干上引一条横线过来 */
+@utility child-rail {
+  position: relative;
+  padding-block: 7px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 32px;
+    width: 22px;
+    height: 1px;
+    background: var(--color-line-strong);
+  }
+}
+
+/* --- D：Tailwind 内置链在本机 Chrome 上会静默失效，改用直写声明 ---
+   Tailwind v4 的 drop-shadow-* / backdrop-blur-* / tabular-nums 生成的是
+   「空格分隔的 var(--tw-xxx,) 链」。实测本机 Chrome 114 下：只要链里出现
+   用 @property 注册过、又没有被赋值的变量（靠空 fallback 兜底），整条声明
+   就被判为无效，计算值退回 none / normal —— 表现为「投影和等宽数字悄悄丢
+   掉」，且不报任何错。这里不依赖那条链，直接写出等价的最终值。
+
+   注：投影里的 rgba(37,49,61,…) 就是 --color-ink（#25313d）配对应透明度。
+   写成字面值是为了计算值与改造前逐字符一致（走 color-mix 会得到
+   color(srgb …) 这种另一种序列化，渲染相同但难以逐字符核对）。 */
+
+/* 首页卡片立绘的投影 */
+@utility sprite-shadow {
+  filter: drop-shadow(0 6px 10px rgba(37, 49, 61, 0.14));
+}
+
+/* 详情页大立绘的投影 */
+@utility art-shadow {
+  filter: drop-shadow(0 10px 18px rgba(37, 49, 61, 0.16));
+}
+
+/* 进化节点小图的投影 */
+@utility thumb-shadow {
+  filter: drop-shadow(0 3px 6px rgba(37, 49, 61, 0.14));
+}
+
+/* 数字用等宽字形，保证数值列竖直对齐 */
+@utility num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- A：由 --tint 派生的固定配方 --- */
+
+/* 属性小标签：低饱和底 + 同色系深字，不刺眼又够清楚 */
+@utility type-chip {
+  background-color: color-mix(in srgb, var(--tint) 15%, #fff);
+  color: color-mix(in srgb, var(--tint) 72%, #1f2a35);
+}
+
+/* 属性筛选芯片的**选中态**：实心主属性色。
+   掺入 38% 的深色（--color-ink 的更深版本）是为了把白字的对比度拉到 7:1 以上，
+   纯属性色配白字在浅属性（冰 / 妖精 / 飞行）上会糊。 */
+@utility type-chip-on {
+  background-color: color-mix(in srgb, var(--tint) 62%, #1f2a35);
+  border-color: color-mix(in srgb, var(--tint) 62%, #1f2a35);
+  color: #fff;
+}
+
+/* 幼年形态标记：用品牌黄做浅底深字 */
+@utility badge-baby {
+  background-color: color-mix(in srgb, var(--color-yellow) 18%, #fff);
+  color: color-mix(in srgb, var(--color-yellow) 62%, #3a3222);
+}
+
+/* 种族值进度条的填充 */
+@utility tint-bar {
+  background-color: color-mix(in srgb, var(--tint) 62%, #fff);
+}
+
+/* 种族值总和的数字 */
+@utility tint-total {
+  color: color-mix(in srgb, var(--tint) 70%, #1f2a35);
+}
+
+/* 卡片立绘底座的光晕：用主属性色做一圈很淡的底，把不同属性区分开又不抢眼 */
+@utility tint-halo {
+  background-image: radial-gradient(
+    circle at 50% 58%,
+    color-mix(in srgb, var(--tint) 20%, transparent) 0%,
+    color-mix(in srgb, var(--tint) 8%, transparent) 48%,
+    transparent 72%
+  );
+}
+
+/* 详情页大立绘的光晕：同一配方的更强一档 */
+@utility tint-halo-strong {
+  background-image: radial-gradient(
+    circle at 50% 56%,
+    color-mix(in srgb, var(--tint) 26%, transparent) 0%,
+    color-mix(in srgb, var(--tint) 10%, transparent) 45%,
+    transparent 70%
+  );
+}
+
+/* 图鉴说明块左侧的色条 */
+@utility tint-rule {
+  border-left-color: color-mix(in srgb, var(--tint) 45%, var(--color-line));
+}
+
+/* 卡片 hover：描边带上一点主属性色 */
+@utility tint-edge {
+  border-color: color-mix(in srgb, var(--tint) 34%, var(--color-line));
+}
+
+/* 进化节点 hover：比卡片再实一点 */
+@utility tint-edge-strong {
+  border-color: color-mix(in srgb, var(--tint) 40%, var(--color-line));
+}
+
+/* 进化树上「当前所在」的节点：主属性色做左侧色条 + 更实的边框，克制但一眼能看出 */
+@utility tint-node-active {
+  border-color: color-mix(in srgb, var(--tint) 52%, var(--color-line));
+  background-color: color-mix(in srgb, var(--tint) 7%, var(--color-surface));
+  box-shadow: inset 3px 0 0 0 var(--tint), var(--shadow-sm);
+}
+
+/* ==========================================================================
+   需要暗色主题时，加一个 [data-theme='dark'] 块覆盖上面的 @theme 变量即可；
+   组件里全是 utility 与语义化 token，不需要改任何组件。
+   ========================================================================== */

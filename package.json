@@ -1,0 +1,37 @@
+{
+  "name": "pokemon-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "data": "node scripts/build-data.mjs",
+    "data:force": "node scripts/build-data.mjs --force",
+    "data:check": "node scripts/check-data.mjs",
+    "db": "node scripts/build-db.mjs",
+    "db:check": "node scripts/check-db.mjs",
+    "api:check": "node tools/api-check.cjs",
+    "pokedex:check": "node tools/pokedex-check.cjs",
+    "ui:check": "node tools/ui-check.cjs",
+    "tw:compile": "node tools/tw-compile.cjs tools/tw-out.css",
+    "tw:audit": "node tools/tw-compile.cjs tools/tw-out.css && node tools/tw-audit.cjs tools/tw-out.css",
+    "style:snap": "node tools/style-snapshot.cjs baseline-after.json",
+    "style:diff": "node tools/style-diff.cjs baseline-before.json baseline-after.json style-diff-report.md",
+    "px:diff": "node tools/pixel-diff.cjs"
+  },
+  "dependencies": {
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5"
+  }
+}
