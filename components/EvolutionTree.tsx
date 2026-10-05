@@ -18,6 +18,8 @@ interface Props {
   /** 形态 id → 展示信息。数据由调用方传入，本组件不读任何全局数据 */
   members: EvoMembers;
   onSelect: (id: number) => void;
+  /** 紧凑模式（右侧信息面板用）：省掉底部那段说明文字 */
+  compact?: boolean;
 }
 
 const dexLabel = (n: number) => `#${String(n).padStart(4, '0')}`;
@@ -126,6 +128,47 @@ function LinearRow({
   );
 }
 
+/* ------------------------ 紧凑纵向列表（右侧面板） ------------------------- */
+
+/**
+ * 纵向排的形态列表。
+ * 右侧信息面板只有 ~360px，横向排 + 条件文字一定会溢出成滚动条
+ * （实测：喷火龙的「小火龙 → 火恐龙 → 喷火龙」被裁掉一半）。
+ * 纵向列表没有宽度问题，条件文字换成一条指向下方节点的行。
+ */
+function CompactList({
+  nodes,
+  members,
+  currentId,
+  onSelect,
+}: {
+  nodes: EvoNode[];
+  members: EvoMembers;
+  currentId: number;
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <ol className="flex flex-col gap-1.5">
+      {nodes.map((node, i) => (
+        <li key={node.id} className="flex flex-col gap-1">
+          {i > 0 && node.condition && (
+            <span className="flex items-center gap-1.5 pl-3 text-[11px] leading-[1.4] text-ink-3">
+              <span aria-hidden="true">↓</span>
+              {node.condition}
+            </span>
+          )}
+          <EvoNodeCard
+            node={node}
+            member={members[node.id]}
+            isCurrent={node.id === currentId}
+            onSelect={onSelect}
+          />
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /* ----------------------------- 有分支：缩进树 ------------------------------ */
 
 function Branch({
@@ -196,7 +239,7 @@ function Branch({
  * 形态的展示信息由 members 传进来 —— 本组件不依赖任何全局数据源，
  * 所以既能给首页（静态数据）用，也能给图鉴查询页（数据库）用。
  */
-export default function EvolutionTree({ line, currentId, members, onSelect }: Props) {
+export default function EvolutionTree({ line, currentId, members, onSelect, compact = false }: Props) {
   const nodes = flattenLine(line);
 
   if (nodes.length <= 1) {
@@ -209,6 +252,11 @@ export default function EvolutionTree({ line, currentId, members, onSelect }: Pr
   const stageMax = Math.max(...collectDepths(root)) + 1;
   const routeCount = getRouteCount(line);
 
+  // 紧凑模式（右侧信息面板）：横向排一定会溢出，改纵向列表
+  if (compact) {
+    return <CompactList nodes={nodes} members={members} currentId={currentId} onSelect={onSelect} />;
+  }
+
   return (
     <div>
       {linear ? (
@@ -217,10 +265,12 @@ export default function EvolutionTree({ line, currentId, members, onSelect }: Pr
         <Branch node={root} members={members} currentId={currentId} onSelect={onSelect} />
       )}
 
-      <p className="mt-3.5 border-t border-dashed border-line pt-2.5 text-[12px] text-ink-3">
-        点击任意形态可查看它的资料 · 当前位于第 {stageNow} 阶段，本条进化线共 {stageMax} 阶段
-        {routeCount > 1 ? `，分 ${routeCount} 条进化路线` : ''}
-      </p>
+      {!compact && (
+        <p className="mt-3.5 border-t border-dashed border-line pt-2.5 text-[12px] text-ink-3">
+          点击任意形态可查看它的资料 · 当前位于第 {stageNow} 阶段，本条进化线共 {stageMax} 阶段
+          {routeCount > 1 ? `，分 ${routeCount} 条进化路线` : ''}
+        </p>
+      )}
     </div>
   );
 }

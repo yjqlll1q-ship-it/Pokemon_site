@@ -3,20 +3,31 @@
 import { useEffect, useState } from 'react';
 import type { ApiError, TypeProfile, TypeRef } from '@/lib/api-types';
 import { typeTintStyle } from '@/lib/typeColors';
+import { TypeGlyph } from './typeIcons';
 
 interface Props {
   /** 点击某个属性 → 用它筛选列表 */
   onPick: (slug: string) => void;
 }
 
-/** 一条相性：小圆点 + 属性名，颜色走属性自己的色变量 */
+/**
+ * 一条相性：属性图标 + 属性名，颜色走属性自己的色变量。
+ *
+ * 2026-09-29：前面的 5px 纯色圆点换成**属性图标**，与 TypeBadge 同一口径。
+ * 这里是 18 个属性图标**能同屏看全的唯一位置**（卡片头那 18 个 + 相性行里的交叉引用），
+ * 所以圆点换图标在「按属性分类」这一屏上的收益最大。
+ * 图标 11px：与 11px 文字同高，不撑高胶囊（原来那 5px 圆点的高度是视觉锚点，
+ * 换成 11px 图标后胶囊靠 line-height 1.6 撑住，实测高度不变）。
+ */
 function TypePill({ item }: { item: TypeRef }) {
   return (
     <span
       className="type-chip inline-flex items-center gap-1 rounded-full border border-current px-[7px] py-px text-[11px] leading-[1.6] font-medium whitespace-nowrap"
       style={typeTintStyle(item.slug)}
     >
-      <i className="size-[5px] flex-none rounded-full bg-(--tint)" aria-hidden="true" />
+      <i className="inline-flex shrink-0 text-(--tint)" aria-hidden="true" data-testid="type-icon">
+        <TypeGlyph type={item.slug} size={11} />
+      </i>
       {item.nameZh}
     </span>
   );
@@ -89,7 +100,14 @@ export default function TypeGallery({ onPick }: Props) {
             aria-label={`按${t.nameZh}属性筛选`}
           >
             <span className="flex items-center gap-2">
-              <i className="size-3 flex-none rounded-full bg-(--tint)" aria-hidden="true" />
+              {/*
+               * 卡片头：属性图标 + 属性名（原为 size-3 圆点）。
+               * 卡片头用 16px —— 18 张卡片同屏时这一列图标是「一眼扫出属性」的锚点，
+               * 与 15px 的属性名等重，比相性行里的 11px 明显大一档。
+               */}
+              <i className="inline-flex shrink-0 text-(--tint)" aria-hidden="true" data-testid="type-icon">
+                <TypeGlyph type={t.slug} size={16} />
+              </i>
               <b className="text-[15px] font-bold tracking-[0.01em]">{t.nameZh}</b>
               <span className="ml-auto text-[11.5px] text-ink-3 num-tabular">
                 共 {t.count} 只

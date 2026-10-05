@@ -245,16 +245,37 @@ async function main() {
     const back = await waitFor(b, `(()=>{const n=${IDS};return n[0]===1?n:null;})()`);
     ok('[5] 上一页回到 #1', back[0] === 1, back[0]);
 
-    /* ---------------------- [6] 详情弹窗 ---------------------- */
+    /* ---------- [6] 点卡片 → 整页详情（不是弹窗） ---------- */
+    /*
+     * 口径：查询页的详情与首页的详情必须是**同一份实现**。
+     * 所以这里断言的是「URL 变成 /pokemon/1 且整页详情渲染出来」，
+     * 并且**页面上不再存在弹窗**（旧实现是 Modal + 内嵌 PokemonDetail）。
+     */
     await b.ev(CLICK('[data-testid=result-card]'));
-    const modal = await waitFor(b, `!!document.querySelector('[data-testid=detail]')`, 12000);
-    ok('[6] 点卡片弹出详情', modal === true, modal);
+    const detailUrl = await waitFor(
+      b,
+      `(()=>location.pathname==='/pokemon/1'?location.pathname:null)()`,
+      12000,
+    );
+    ok('[6] 点结果卡片跳到 /pokemon/1', detailUrl === '/pokemon/1', detailUrl);
 
-    const title = await b.ev(`(()=>{const h=document.querySelector('#pokedex-detail-title');return h?h.textContent:'';})()`);
-    ok('[6] 弹窗标题是妙蛙种子（列表第一只）', title === '妙蛙种子', title);
+    const dialog = await b.ev(`!!document.querySelector('[role=dialog]')`);
+    ok('[6] 页面上不再有详情弹窗', dialog === false, dialog);
 
-    const hasEvo = await b.ev(`!!document.querySelector('[data-testid=evolution]')`);
-    ok('[6] 弹窗里有进化区', hasEvo === true, hasEvo);
+    const title = await waitFor(
+      b,
+      `(()=>{const h=document.querySelector('[data-testid=pokemon-screen] h1');return h?h.textContent.trim():null;})()`,
+      12000,
+    );
+    ok('[6] 整页详情标题是妙蛙种子（列表第一只）', title === '妙蛙种子', title);
+
+    /*
+     * 详情默认停在「基本信息」Tab，所以 [data-testid=evolution]（Tab 内容）此刻不在 DOM 里 ——
+     * 常驻可见的进化链是右侧信息面板 [data-testid=side-evo]。这里断言右侧那个，
+     * 「点 Tab 能切出进化链」由 ui-check 负责。
+     */
+    const hasEvo = await b.ev(`!!document.querySelector('[data-testid=side-evo]')`);
+    ok('[6] 右侧信息面板里有进化链', hasEvo === true, hasEvo);
 
     const evoNodes = await b.ev(`document.querySelectorAll('[data-testid=evo-node]').length`);
     ok('[6] 进化树上有节点（妙蛙种子线 3 个形态）', evoNodes === 3, evoNodes);
@@ -265,28 +286,23 @@ async function main() {
     ok('[6] 进化树缩略图全部真实加载（非破图）', evoThumbsLoaded === true, evoThumbsLoaded);
 
     const statBars = await b.ev(`document.querySelectorAll('[data-testid=stat-bar]').length`);
-    ok('[6] 弹窗里有 6 条种族值', statBars === 6, statBars);
+    ok('[6] 详情里有 6 条种族值', statBars === 6, statBars);
 
     await b.screenshot(path.join(SHOTS, 'p2-pokedex-detail.png'));
 
-    // 点进化树上的下一个形态 → 切换内容
+    // 点进化树上的下一个形态 → 换成另一只
     await b.ev(`(()=>{const n=[...document.querySelectorAll('[data-testid=evo-node]')]
       .find(e=>e.dataset.pokemonId!=='1');if(n){n.click();return true;}return false;})()`);
-    /*
-     * 等「返回上一只」按钮出现，而不是等标题变化：
-     * 标题在加载态就是「正在读取资料…」，直接读标题会读到加载占位符提前通过 ——
-     * 这个按钮只在 detail 真正到位且 stack>1 时渲染，是更强的同步点。
-     */
-    const backBtn = await waitFor(b, `!!document.querySelector('[data-testid=back]')`, 12000);
-    const switched = await b.ev(
-      `(()=>{const h=document.querySelector('#pokedex-detail-title');return h?h.textContent:null;})()`,
+    const switchedUrl = await waitFor(
+      b,
+      `(()=>location.pathname==='/pokemon/2'?location.pathname:null)()`,
+      12000,
     );
-    ok('[6] 点进化树上的形态能切换资料', switched === '妙蛙草' || switched === '妙蛙花', switched);
-    ok('[6] 切换后出现「返回上一只」', backBtn === true, backBtn);
+    ok('[6] 点进化树上的形态切到妙蛙草', switchedUrl === '/pokemon/2', switchedUrl);
 
-    await b.pressKey('Escape', 'Escape', 27);
-    const closed = await waitFor(b, `!document.querySelector('[data-testid=detail]')`);
-    ok('[6] Esc 能关闭弹窗', closed === true, closed);
+    /* 回到查询页，后面的分节继续在列表上做 */
+    await b.send('Page.navigate', { url: `${BASE}/pokedex` });
+    await waitFor(b, `document.querySelectorAll('[data-testid=result-card]').length>0`, 12000);
 
     /* ---------------------- [7] 按属性分类视图 ---------------------- */
     await b.ev(CLICK('[data-testid=view-types]'));

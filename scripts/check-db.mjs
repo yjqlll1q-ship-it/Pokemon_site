@@ -115,6 +115,21 @@ check('范围内每只都有至少 1 个特性', () => {
   `).all();
   return bad.length === 0 ? true : bad.slice(0, 5).map((b) => b.id);
 });
+/*
+ * 叫声地址：详情页「播放叫声」按钮的数据来源。空值不会让页面崩，
+ * 只会让按钮点了没声音 —— 属于「看着正常其实没数据」，必须盯住。
+ */
+check('范围内每只都有叫声地址（cry_url）', () => {
+  const n = count("SELECT COUNT(*) AS c FROM pokemon WHERE in_scope = 1 AND (cry_url IS NULL OR cry_url = '')");
+  return n === 0 ? true : `${n} 只缺少叫声地址`;
+});
+/* 特性说明：详情页「特性」板块要显示的文字，抓取失败会静默变空串 */
+check('特性说明（ability.desc_zh）覆盖率 ≥ 85%', () => {
+  const total = count('SELECT COUNT(*) AS c FROM ability');
+  const withDesc = count("SELECT COUNT(*) AS c FROM ability WHERE desc_zh IS NOT NULL AND desc_zh <> ''");
+  const ratio = total ? withDesc / total : 0;
+  return ratio >= 0.85 ? true : `${withDesc}/${total} = ${(ratio * 100).toFixed(0)}%`;
+});
 check('属性槽位是 1 和 2，且同属性不重复占槽', () => {
   const bad = db.prepare(`
     SELECT COUNT(*) AS c FROM (
@@ -252,6 +267,20 @@ check('分类至少有 50 种（不是所有宝可梦共用一个值）', () => 
 check('按分类「鼠宝可梦」能搜到皮丘/皮卡丘/雷丘', () => {
   const n = search({ q: '鼠宝可梦' });
   return n >= 3 ? true : n;
+});
+/*
+ * 宣传语是「登记制」：build-data.mjs 的 TAGLINE_ZH 里登记过的才有。
+ * 这里盯的不是「有没有这一列」，而是**空串与 NULL 不能混**——
+ * 空串在前端是 truthy 的，会渲染出一条空白飘带（比不渲染更糟：一块莫名的红条）。
+ * 所以口径是「要么有内容，要么是 NULL，不允许出现空串」。
+ */
+check('宣传语列可以是 NULL，但不允许是空串', () => {
+  const n = count("SELECT COUNT(*) AS c FROM pokemon WHERE tagline_zh = ''");
+  return n === 0 ? true : `${n} 行是空串（前端会渲染成空白飘带）`;
+});
+check('宣传语只在登记过的宝可梦上有（当前 1 只）', () => {
+  const n = count('SELECT COUNT(*) AS c FROM pokemon WHERE tagline_zh IS NOT NULL');
+  return n === 1 ? true : n;
 });
 check('中文名部分匹配「伊布」命中 >1 只（伊布家族）', () => {
   const n = search({ q: '伊布' });

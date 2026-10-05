@@ -11,8 +11,9 @@ const dexLabel = (n: number) => `#${String(n).padStart(4, '0')}`;
 
 /**
  * 图鉴查询页的结果卡片。
- * 和首页卡片（PokemonCard）刻意不同：这里不展示进化线规模，改成展示
- * 种族值总和与世代 —— 查询场景下用户关心的是「值不值」，不是「能进化成几只」。
+ * 展示口径刻意与详情页不同：这里不谈进化线，只给「种族值总和 + 分类」——
+ * 查询场景下用户关心的是「值不值」，不是「能进化成几只」。
+ * 点它直接跳整页详情（/pokemon/[id]），与首页详情同一份实现。
  */
 export default function PokedexResultCard({ pokemon, onOpen }: Props) {
   return (

@@ -16,12 +16,15 @@
     "pokedex:check": "node tools/pokedex-check.cjs",
     "bg:check": "node tools/bg-check.cjs",
     "ui:check": "node tools/ui-check.cjs",
+    "bundle:check": "node tools/bundle-check.cjs",
     "tw:compile": "node tools/tw-compile.cjs tools/tw-out.css",
     "tw:audit": "node tools/tw-compile.cjs tools/tw-out.css && node tools/tw-audit.cjs tools/tw-out.css",
     "style:snap": "node tools/style-snapshot.cjs baseline-after.json",
+    "style:baseline": "node tools/style-snapshot.cjs baseline-current.json",
     "style:diff": "node tools/style-diff.cjs baseline-before.json baseline-after.json style-diff-report.md",
     "style:regress": "node tools/style-snapshot.cjs style-snapshot.json && node tools/style-diff.cjs baseline-current.json style-snapshot.json style-diff-current.md",
-    "px:diff": "node tools/pixel-diff.cjs"
+    "px:diff": "node tools/pixel-diff.cjs",
+    "review:shots": "node tools/review-shots.cjs"
   },
   "dependencies": {
     "next": "16.3.6",

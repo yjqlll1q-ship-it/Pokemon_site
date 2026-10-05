@@ -529,7 +529,10 @@ export function getFacets(): Facets {
 
 /**
  * 返回结构见 lib/api-types.ts 的 DetailResponse：
- * pokemon 与 data/pokedex.json 里的单只结构同构，前端 PokemonDetail 可以直接吃。
+ * pokemon 与 data/pokedex.json 里的单只结构同构，前端 PokemonScreen 可以直接吃。
+ *
+ * **唯一的例外是 forms**：这条路径固定给空数组（数据库里没有形态表），
+ * 详情页用的是静态数据，形态齐全。见 rowToPokemon 里的说明。
  */
 
 /** 英文种族值 key ↔ pokemon 表的列名 */
@@ -555,7 +558,7 @@ const STAT_ZH_LABEL: Record<string, string> = {
 function rowToPokemon(
   row: Record<string, unknown>,
   typeInfo: { types: string[]; names: string[] },
-  abilities: { slug: string; nameZh: string; hidden: boolean }[],
+  abilities: { slug: string; nameZh: string; descZh: string; hidden: boolean }[],
   eggGroups: { slug: string; nameZh: string }[],
 ): Pokemon {
   const stats: Record<string, number> = {};
@@ -582,7 +585,15 @@ function rowToPokemon(
     weightKg: Number(row.weight_kg),
     genusZh: String(row.genus_zh ?? ''),
     flavorZh: String(row.flavor_zh ?? ''),
+    /*
+     * 宣传语是**可选**字段：DB 里没有这一行就是 NULL。
+     * 这里刻意不写成 `String(row.tagline_zh ?? '')` —— 那会把 NULL 变成空串，
+     * 而空串是 truthy 的，前端 `{taglineZh && <PromoRibbon …/>}` 会渲染出一条空白飘带。
+     * 给 undefined（等价于「字段不存在」）才是正确的降级。
+     */
+    taglineZh: row.tagline_zh == null ? undefined : String(row.tagline_zh),
     sprite: String(row.sprite),
+    cryUrl: String(row.cry_url ?? ''),
     colorKey: String(row.color ?? 'normal'),
     isBaby: Boolean(row.is_baby),
     evolvesFrom: row.evolves_from_name == null ? null : String(row.evolves_from_name),
@@ -595,6 +606,16 @@ function rowToPokemon(
     eggGroups,
     isLegendary: Boolean(row.is_legendary),
     isMythical: Boolean(row.is_mythical),
+    /*
+     * 形态**不随查询路径返回**：数据库里没有形态表（形态对列表页的筛选/排序毫无用处，
+     * 灌进来只是让 246 行数据多占一份）。详情页走的是静态数据那条路，形态是齐的。
+     *
+     * 这里给空数组而不是省略字段，是因为 UI 的口径就是「空数组 = 没有额外形态」。
+     * ⚠️ 所以：**如果以后要把 /api/pokedex/[id] 接到详情页**，必须先把形态灌进数据库，
+     * 否则皮卡丘（17 个形态）、洛托姆（6 个）这类页面会静默地少掉整块形态 UI，
+     * 不报任何错。详见 README「形态」一节。
+     */
+    forms: [],
   };
 }
 
@@ -628,12 +649,12 @@ export function getPokemonDetail(id: number): DetailResponse | null {
   );
   if (!row) return null;
 
-  const abilities = all<{ slug: string; name_zh: string; is_hidden: number }>(
-    `SELECT a.slug, a.name_zh, pa.is_hidden
+  const abilities = all<{ slug: string; name_zh: string; desc_zh: string; is_hidden: number }>(
+    `SELECT a.slug, a.name_zh, a.desc_zh, pa.is_hidden
      FROM pokemon_ability pa JOIN ability a ON a.slug = pa.ability_slug
      WHERE pa.pokemon_id = ? ORDER BY pa.slot`,
     id,
-  ).map((a) => ({ slug: a.slug, nameZh: a.name_zh, hidden: Boolean(a.is_hidden) }));
+  ).map((a) => ({ slug: a.slug, nameZh: a.name_zh, descZh: a.desc_zh, hidden: Boolean(a.is_hidden) }));
 
   const eggGroups = all<{ slug: string; name_zh: string }>(
     `SELECT g.slug, g.name_zh

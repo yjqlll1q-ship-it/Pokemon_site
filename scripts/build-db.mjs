@@ -66,6 +66,10 @@ CREATE TABLE pokemon (
   in_scope        INTEGER NOT NULL,          -- 1 = 前三世代（#1–386），图鉴查询默认只看这些
   genus_zh        TEXT    NOT NULL DEFAULT '',
   flavor_zh       TEXT    NOT NULL DEFAULT '',
+  -- 宣传语（右侧信息卡的飘带）。刻意允许 NULL，与上面两列的
+  -- 「NOT NULL DEFAULT ''」不同：空串会渲染成一条空白飘带，NULL 才是
+  -- 「这只没有飘带」—— 前端靠 truthy 判断整块渲不渲染，空串是 truthy 的，会漏。
+  tagline_zh      TEXT,
   height_m        REAL    NOT NULL,
   weight_kg       REAL    NOT NULL,
   capture_rate    INTEGER,
@@ -83,7 +87,8 @@ CREATE TABLE pokemon (
   stat_total      INTEGER NOT NULL,
   evolves_from_id INTEGER REFERENCES pokemon(id),
   chain_id        INTEGER REFERENCES chain(id),
-  sprite          TEXT    NOT NULL
+  sprite          TEXT    NOT NULL,
+  cry_url         TEXT    NOT NULL DEFAULT ''   -- 叫声地址（PokeAPI cries CDN）
 );
 
 CREATE TABLE chain (
@@ -100,7 +105,8 @@ CREATE TABLE pokemon_type (
 
 CREATE TABLE ability (
   slug    TEXT PRIMARY KEY,
-  name_zh TEXT NOT NULL
+  name_zh TEXT NOT NULL,
+  desc_zh TEXT NOT NULL DEFAULT ''   -- 特性说明（详情页「特性」板块展示）
 );
 
 CREATE TABLE pokemon_ability (
@@ -227,11 +233,11 @@ async function main() {
     const st = db.prepare(`
       INSERT INTO pokemon (
         id, name_en, name_zh, name_ja, dex_number, generation, in_scope,
-        genus_zh, flavor_zh, height_m, weight_kg, capture_rate, base_happiness, color,
+        genus_zh, flavor_zh, tagline_zh, height_m, weight_kg, capture_rate, base_happiness, color,
         is_baby, is_legendary, is_mythical,
         stat_hp, stat_attack, stat_defense, stat_sp_attack, stat_sp_defense, stat_speed, stat_total,
-        evolves_from_id, chain_id, sprite
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        evolves_from_id, chain_id, sprite, cry_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const p of pokemonList) {
@@ -246,6 +252,8 @@ async function main() {
         int(p.inScope),
         str(p.genusZh),
         str(p.flavorZh),
+        /* NULL = 没有飘带。str() 会把 undefined 变成 ''，所以这里单独判空。 */
+        p.taglineZh ? str(p.taglineZh) : null,
         num(p.heightM, 0),
         num(p.weightKg, 0),
         num(p.captureRate),
@@ -264,6 +272,7 @@ async function main() {
         num(p.evolvesFromId),
         num(p.chainId),
         str(p.sprite),
+        str(p.cryUrl),
       );
     }
   }
@@ -280,7 +289,7 @@ async function main() {
 
   /* ---- 特性 ---- */
   {
-    const stA = db.prepare('INSERT OR IGNORE INTO ability (slug, name_zh) VALUES (?, ?)');
+    const stA = db.prepare('INSERT OR REPLACE INTO ability (slug, name_zh, desc_zh) VALUES (?, ?, ?)');
     const stPa = db.prepare(
       'INSERT INTO pokemon_ability (pokemon_id, slot, ability_slug, is_hidden) VALUES (?, ?, ?, ?)',
     );
@@ -288,7 +297,7 @@ async function main() {
       (p.abilities ?? []).forEach((a, i) => {
         const slug = str(a.slug);
         if (!slug) return;
-        stA.run(slug, str(a.nameZh, slug));
+        stA.run(slug, str(a.nameZh, slug), str(a.descZh));
         stPa.run(p.id, i + 1, slug, int(a.hidden));
       });
     }

@@ -106,7 +106,7 @@ export interface TypeProfile extends TypeRef {
 /* ------------------------------- 详情 ------------------------------- */
 
 export interface DetailResponse {
-  /** 与 data/pokedex.json 里的单只结构同构，可直接交给 PokemonDetail 渲染 */
+  /** 与 data/pokedex.json 里的单只结构同构，可直接交给 PokemonScreen 渲染 */
   pokemon: Pokemon;
   line: EvoLine;
   members: EvoMembers;

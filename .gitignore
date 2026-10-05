@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# 临时工作目录（探查输出、一次性修复脚本、推送脚本等）
+/.scratch
+
 # 本地截图产物（tools/ui-check.cjs 生成）
 /shots
 /shots-before

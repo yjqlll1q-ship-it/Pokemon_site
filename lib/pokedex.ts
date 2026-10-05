@@ -19,12 +19,15 @@
 
 import raw from '@/data/pokedex.json';
 import { flattenLine, type EvoLine, type EvoMember, type EvoMembers, type EvoNode } from './evolution';
+import type { PokemonForm } from './forms';
 
 /* ---------------------------------- 类型 ---------------------------------- */
 
 export interface Ability {
   slug: string;
   nameZh: string;
+  /** 特性说明（中文；缺失时为空串） */
+  descZh: string;
   hidden: boolean;
 }
 
@@ -54,8 +57,21 @@ export interface Pokemon {
   /** 分类，如"种子宝可梦" */
   genusZh: string;
   flavorZh: string;
+  /**
+   * 宣传语（右侧信息卡顶部那条飘带上的短句），如「无处不在的电子伙伴！」。
+   *
+   * **可选**：数据源（PokéAPI）里没有这类文案，所以我们不凭空造。
+   * 有值就渲染飘带，**没有值整块不渲染**（不报错、不留白、不占位）——
+   * 见 components/PromoRibbon.tsx 与 PokemonScreen 的 side-intro。
+   *
+   * 要批量补文案：在 scripts/build-data.mjs 的 TAGLINE_ZH 里按 id 或 slug 登记；
+   * 不登记的宝可梦就是「没有飘带」，这是正常状态而非缺数据。
+   */
+  taglineZh?: string;
   /** 本地立绘路径 */
   sprite: string;
+  /** 叫声地址（PokeAPI cries CDN，前端直接播放） */
+  cryUrl: string;
   colorKey: string;
   isBaby: boolean;
   evolvesFrom: string | null;
@@ -71,6 +87,12 @@ export interface Pokemon {
   eggGroups: EggGroup[];
   isLegendary: boolean;
   isMythical: boolean;
+  /**
+   * 额外形态（超级进化 / 地区形态 / 洛托姆的家电形态…）。
+   * **没有额外形态时是空数组**，不是 null —— 前端按 forms.length 判断整块渲不渲染。
+   * 首位一定是基本形态（isDefault: true）。
+   */
+  forms: PokemonForm[];
 }
 
 export interface TypeMeta {
@@ -105,17 +127,14 @@ interface PokedexFile {
 const pokedex = raw as unknown as PokedexFile;
 
 export type { EvoLine, EvoNode, EvoMember, EvoMembers };
+export type { PokemonForm } from './forms';
 
 /* --------------------------------- 统计标签 -------------------------------- */
-
-export const STAT_LABELS: { key: string; label: string }[] = [
-  { key: 'hp', label: 'HP' },
-  { key: 'attack', label: '攻击' },
-  { key: 'defense', label: '防御' },
-  { key: 'special-attack', label: '特攻' },
-  { key: 'special-defense', label: '特防' },
-  { key: 'speed', label: '速度' },
-];
+/*
+ * 六项种族值的展示元数据（key / 中文标签 / 条色）在 lib/statMeta.ts，
+ * **不要把它搬回这个文件** —— 客户端组件引一次就会把全量 JSON 拖进浏览器包。
+ * 这里只保留服务端读数据需要的东西。
+ */
 
 /* --------------------------------- 读取接口 -------------------------------- */
 
@@ -137,6 +156,13 @@ export function getBaseForms(): Pokemon[] {
 
 export function getLines(): EvoLine[] {
   return pokedex.lines;
+}
+
+/** 数据里全部宝可梦编号（升序）。详情路由的 generateStaticParams 用它预生成页面 */
+export function getAllIds(): number[] {
+  return Object.keys(pokedex.pokemon)
+    .map(Number)
+    .sort((a, b) => a - b);
 }
 
 export function getGenerations(): GenerationMeta[] {

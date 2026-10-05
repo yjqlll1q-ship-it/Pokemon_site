@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type {
   ApiError,
-  DetailResponse,
   Facets,
   SearchResponse,
   SortKey,
@@ -11,10 +11,9 @@ import type {
   TagKey,
 } from '@/lib/api-types';
 import { typeTintStyle } from '@/lib/typeColors';
-import Modal from './Modal';
-import PokemonDetail from './PokemonDetail';
 import PokedexResultCard from './PokedexResultCard';
 import TypeGallery from './TypeGallery';
+import { TypeGlyph } from './typeIcons';
 
 /* -------------------------------------------------------------------------- */
 /* 筛选状态                                                                     */
@@ -219,9 +218,8 @@ function pageWindow(current: number, total: number): (number | '…')[] {
 /* 主体                                                                         */
 /* -------------------------------------------------------------------------- */
 
-const TITLE_ID = 'pokedex-detail-title';
-
 export default function PokedexQuery() {
+  const router = useRouter();
   const [filters, setFilters] = useState<Filters>(DEFAULTS);
   /** 输入框的即时值；防抖后才进 filters，避免每敲一个字都打一次接口 */
   const [qInput, setQInput] = useState('');
@@ -235,10 +233,6 @@ export default function PokedexQuery() {
 
   const [view, setView] = useState<'list' | 'types'>('list');
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const [stack, setStack] = useState<number[]>([]);
-  const [detail, setDetail] = useState<DetailResponse | null>(null);
-  const [detailError, setDetailError] = useState<string | null>(null);
 
   const seeded = useRef(false);
 
@@ -309,33 +303,13 @@ export default function PokedexQuery() {
     return () => ctrl.abort();
   }, [queryString]);
 
-  /* ---- 6. 详情（点卡片才拉，不在列表里带全量数据） ---- */
-  const currentId = stack.length ? stack[stack.length - 1] : null;
-
-  useEffect(() => {
-    if (currentId == null) return;
-    let alive = true;
-    setDetail(null);
-    setDetailError(null);
-    fetch(`/api/pokedex/${currentId}`)
-      .then(async (r) => {
-        const body = (await r.json()) as DetailResponse | ApiError;
-        if (!r.ok) throw new Error('error' in body ? body.error : `HTTP ${r.status}`);
-        return body as DetailResponse;
-      })
-      .then((d) => alive && setDetail(d))
-      .catch((e: Error) => alive && setDetailError(e.message));
-    return () => {
-      alive = false;
-    };
-  }, [currentId]);
-
-  const close = useCallback(() => setStack([]), []);
-  const back = useCallback(() => setStack((s) => s.slice(0, -1)), []);
-  const dive = useCallback(
-    (id: number) => setStack((s) => (s[s.length - 1] === id ? s : [...s, id])),
-    [],
-  );
+  /* ---- 6. 点卡片 → 跳整页详情 ---- */
+  /*
+   * 这里原来是一个 Modal + 内嵌的 PokemonDetail，跟首页的整页详情两套版式。
+   * 现在统一成「跳 /pokemon/[id]」：同一份 PokemonScreen、同一条 URL 规则，
+   * 详情只有一处实现，改版式不用改两个地方。
+   */
+  const open = useCallback((id: number) => router.push(`/pokemon/${id}`), [router]);
 
   /* ---- 派生：生效筛选数 / 分页窗口 ---- */
   const activeCount = useMemo(() => {
@@ -479,6 +453,22 @@ export default function PokedexQuery() {
                   data-testid="type-chip"
                   data-type={t.slug}
                 >
+                  {/*
+                   * 属性筛芯片前面也放属性图标（2026-09-29 加），与其余两处属性标签同一口径。
+                   *
+                   * 颜色不能写死：选中态 `type-chip-on` 是实心深底 + 白字，图标必须跟着变白；
+                   * 未选中态是浅底 + 同色系深字，图标取 `--tint` 主色。
+                   * 所以用 `currentColor` 语义 —— 选中态给 `text-white`，
+                   * 未选中态给 `text-(--tint)`，图标自身只写 `stroke="currentColor"`，
+                   * 不需要在组件里判 `on`。
+                   */}
+                  <i
+                    className={['inline-flex shrink-0', on ? 'text-white' : 'text-(--tint)'].join(' ')}
+                    aria-hidden="true"
+                    data-testid="type-icon"
+                  >
+                    <TypeGlyph type={t.slug} size={11} />
+                  </i>
                   {t.nameZh}
                   <span className={`text-[10.5px] font-normal num-tabular ${on ? 'opacity-80' : 'opacity-70'}`}>
                     {t.count}
@@ -819,11 +809,7 @@ export default function PokedexQuery() {
               data-testid="result-grid"
             >
               {data.items.map((p) => (
-                <PokedexResultCard
-                  key={p.id}
-                  pokemon={p}
-                  onOpen={(id) => setStack([id])}
-                />
+                <PokedexResultCard key={p.id} pokemon={p} onOpen={open} />
               ))}
             </ul>
           )}
@@ -884,39 +870,6 @@ export default function PokedexQuery() {
       )}
 
       {view === 'types' && <TypeGallery onPick={pickType} />}
-
-      {/* ---------------- 详情弹窗 ---------------- */}
-      {currentId != null && (
-        <Modal onClose={close} labelledBy={TITLE_ID} scrollKey={currentId}>
-          {detail && detail.pokemon.id === currentId ? (
-            <PokemonDetail
-              pokemon={detail.pokemon}
-              line={detail.line}
-              members={detail.members}
-              titleId={TITLE_ID}
-              canGoBack={stack.length > 1}
-              onBack={back}
-              onSelect={dive}
-              onClose={close}
-            />
-          ) : (
-            <div className="flex min-h-[220px] flex-col gap-4 px-5 pt-4 pb-6">
-              <h2 id={TITLE_ID} className="text-[15px] font-bold">
-                {detailError ? '资料加载失败' : '正在读取资料…'}
-              </h2>
-              {detailError && <p className="text-[13px] text-ink-2">{detailError}</p>}
-              <button
-                type="button"
-                className="self-start rounded-sm border border-line-strong bg-surface px-3 py-1 text-[12.5px] text-ink-2 transition-colors duration-150 hover:border-navy/40 hover:text-ink"
-                onClick={close}
-                data-autofocus
-              >
-                关闭
-              </button>
-            </div>
-          )}
-        </Modal>
-      )}
     </>
   );
 }

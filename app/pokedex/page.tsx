@@ -15,8 +15,11 @@ export const metadata: Metadata = {
  */
 export default function PokedexPage() {
   return (
-    <main className="mx-auto w-full max-w-[1200px] flex-1 px-6 pt-10 pb-16 max-[520px]:px-4 max-[520px]:pt-[26px]">
-      <PokedexQuery />
+    <main className="mx-auto w-full max-w-[1320px] flex-1 px-5 py-6 max-[520px]:px-3 max-[520px]:py-4">
+      {/* 白卡包住整个查询区：外壳底色是深蓝，内容直接铺上去会让深色文字看不清 */}
+      <div className="panel-card px-6 py-5 max-[520px]:px-4 max-[520px]:py-4">
+        <PokedexQuery />
+      </div>
     </main>
   );
 }

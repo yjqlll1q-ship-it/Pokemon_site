@@ -10,15 +10,32 @@
 
    改配色 / 圆角 / 阴影 / 字体，只在下面的 @theme 里改，全站生效。
 
-   配色依据（都是查到的现成参考，不是拍脑袋定的）：
+  配色依据（都是查到的现成参考，不是拍脑袋定的）：
      1. 官方 Pokémon 品牌色：黄 #FFCB05 / 蓝 #3D7DCA / 深蓝 #003A70
         （来源：brandpalettes.com/pokemon-color-codes）
      2. 精灵球红 #EE1515（来源：schemecolor.com/pokemon-colors）
      3. 属性色：Bulbapedia《Help:Color templates》的朱紫世代官方属性色
-     4. 降饱和手法：莫兰迪色系思路（饱和度压到 30%~45%、掺灰），
-        并参考了宝可梦同人站 ColorDex 的「混合色」版本
-        （来源：pokemonaaah.net/art/colordex）
-     => 结论：用官方色相 + 低饱和处理，做到「一眼是宝可梦，但不刺眼」。
+     4. 本体色色相：Bulbapedia《List of Pokémon by color》游戏内图鉴调色板
+        （来源：pokemonaaah.net/art/colordex 亦有同人站整理版）
+
+   【2026-09-29 口径变更：从「降饱和」改成「高饱和」】
+   此前本站是莫兰迪降饱和（饱和度压到 30%~45%、掺灰），
+   现按 YJ 要求提到 70%~90% 档。新口径分两组，**不是一刀切**：
+
+     · 彩度组（官方 S ≥ 60%）：火 / 水 / 电 / 草 / 冰 / 格斗 / 毒 / 地面 /
+       飞行 / 超能 / 虫 / 龙 / 妖精 —— 饱和度抬到官方值的 82%~90%，
+       色相严格锁官方，亮度压到「浅底上读得清、不荧光」的一档。
+       这一组是本次提饱和的主要受益者，标签一眼能认出属性。
+
+     · 低彩度组（官方 S < 60%）：一般 / 岩石 / 幽灵 / 恶 / 钢 ——
+       **饱和度保留官方原值**，只微调亮度。原因是这五个的官方色相本身
+       就低饱和（S 19%~54%），硬拔到 70%+ 会跳到另一个色相：
+       一般色 #A8A77A（灰绿）→ #E4E125（亮黄绿）、钢 #B7B7CE（灰蓝）→
+       #4949DF（紫蓝）、恶 #705746（棕黑）→ #9A4F1D（橙棕）。
+       那已经不是「提饱和」，而是换了一套配色。**色相保真优先于饱和度数值**。
+
+   => 结论：色相 100% 对齐官方（脚本校验过 18 项色相偏差 ≤ 3°），
+      饱和度按属性本身的彩度分档。鲜艳但克制，且每个属性都还是官方那个色。
    ========================================================================== */
 
 @import 'tailwindcss';
@@ -38,24 +55,32 @@
    rounded-md / shadow-md 直接用本项目的值，而不是 Tailwind 的默认值。
    -------------------------------------------------------------------------- */
 @theme {
-  /* ---- 面（莫兰迪燕麦 / 米灰，避免纯白刺眼） ---- */
-  --color-paper: #f6f4ef;
-  --color-paper-soft: #efece4;
-  --color-surface: #fffdf9;
-  --color-surface-2: #f3f0e8;
-  --color-line: #e5e0d5;
-  --color-line-strong: #d3ccbd;
+  /* ---- 面（冷调蓝白体系，对齐参考稿；亮度仍压在「不晃眼」一档） ----
+     原先是莫兰迪燕麦暖灰，与参考稿的蓝白体系不是一路。现在改成：
+     卡片纯白、页面底与次级面用极浅蓝灰 —— 层次靠**冷暖和亮度**区分，
+     而不是靠加深，所以依然是浅底深字，不会晃眼。 */
+  --color-paper: #f1f4fa;
+  --color-paper-soft: #e7ecf6;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f6fb;
+  --color-line: #e2e8f2;
+  --color-line-strong: #cbd5e4;
 
   /* ---- 字（由品牌深蓝 #003A70 去饱和而来，保证长文可读） ---- */
   --color-ink: #25313d;
   --color-ink-2: #5a6673;
   --color-ink-3: #8a929c;
 
-  /* ---- 品牌色（官方色相，降饱和 + 提亮） ---- */
-  --color-navy: #2c4a6b; /* ← #003A70 */
-  --color-blue: #6f9ac4; /* ← #3D7DCA */
-  --color-yellow: #d3b055; /* ← #FFCB05 */
-  --color-red: #c0574c; /* ← #EE1515 */
+ /* ---- 品牌色（官方色相，高饱和；2026-09-29 与属性色/主题色同一口径） ----
+     这一组是 logo 精灵球、外壳底、焦点环的色源，属于「标识性用色」，
+     允许比正文配色鲜艳。色相锁官方，饱和度 74%~90%。
+     注：--color-navy 仍然压到 L22% 的深蓝 —— 它要托住一整屏的白色卡片，
+     提到官方 #003A70 的 L22% 同一档是正确的，但 S 没给到 100%
+     （100% 在深色底上会显出「电子蓝」的荧光感，与冷调蓝白体系不搭）。 */
+  --color-navy: #0b3e65; /* ← #003A70 S80%（比上一版更蓝、更贴官方色相） */
+  --color-blue: #2a85df; /* ← #3D7DCA S74% */
+  --color-yellow: #f3c716; /* ← #FFCB05 S90% */
+  --color-red: #ed1912; /* ← #EE1515 S86%，参考稿那个红斜切块就是这个档 */
 
   /* ---- 形体 ---- */
   --radius-sm: 8px;
@@ -99,28 +124,167 @@
 :root {
   --focus-ring: color-mix(in srgb, var(--color-navy) 55%, transparent);
 
-  /* 18 种属性，官方色相降饱和；只在这里维护一次 */
-  --type-normal: #8d8f86;
-  --type-fire: #d2724a;
-  --type-water: #4f8bc9;
-  --type-electric: #c9a83c;
-  --type-grass: #6aa85a;
-  --type-ice: #5fb0c4;
-  --type-fighting: #b85c48;
-  --type-poison: #9a5fa3;
-  --type-ground: #b08a4e;
-  --type-flying: #7f9cd0;
-  --type-psychic: #cf7093;
-  --type-bug: #93a349;
-  --type-rock: #a8955f;
-  --type-ghost: #75639b;
-  --type-dragon: #6169b5;
-  --type-dark: #6b5b58;
-  --type-steel: #7f97a8;
-  --type-fairy: #cd86a8;
+ /* 18 种属性，官方色相高饱和；只在这里维护一次。
+     色相与 Bulbapedia 官方属性色逐项对齐（脚本校验偏差 ≤ 3°）；
+     饱和度分组见文件头「口径变更」一节。
+     括号里是官方原色，便于回溯「这个色是从哪来的」。 */
+  --type-normal: #9c9b68; /* ← #A8A77A 低彩度组：保留官方 S21% */
+  --type-fire: #f1791e; /* ← #EE8130 S88% */
+  --type-water: #1e5feb; /* ← #6390F0 S84% */
+  --type-electric: #f2c40d; /* ← #F7D02C S90% */
+  --type-grass: #57ce12; /* ← #7AC74C S84% */
+  --type-ice: #23e7dd; /* ← #96D9D6 S80% */
+  --type-fighting: #d81913; /* ← #C22E28 S84% */
+  --type-poison: #cc14c9; /* ← #A33EA1 S82% */
+  --type-ground: #e8ad17; /* ← #E2BF65 S82% */
+  --type-flying: #7143ef; /* ← #A98FF3 S84% */
+  --type-psychic: #f33f75; /* ← #F95587 S88% */
+  --type-bug: #aec313; /* ← #A6B91A S82% */
+  --type-rock: #b9a337; /* ← #B6A136 低彩度组：保留官方 S54% */
+  --type-ghost: #715695; /* ← #735797 低彩度组：保留官方 S27% */
+  --type-dragon: #5516f3; /* ← #6F35FC S90% */
+  --type-dark: #715847; /* ← #705746 低彩度组：保留官方 S23% */
+  --type-steel: #7979a4; /* ← #B7B7CE 低彩度组：保留官方 S19% */
+  --type-fairy: #ef4d9e; /* ← #D685AD S84% */
+
+ /* 属性色的「压白字」档：主色是高饱和中间调，13px 白字压上去普遍不达标
+     （实测：电 1.66、冰 1.55、虫 1.98、地面 2.02、草 2.05 —— 都要 4.5）。
+     这一组是**不掺色**的固定深色，用于需要「固定深底 + 白字」的场景。
+     注意：type-chip-solid / type-chip-on 走的是另一条路（从主色现场 color-mix 掺深，
+     掺 44%，全档 ≥4.88），不引用这一组 —— 因为那两处要保住「是哪个属性」的色相，
+     用固定深色会把 18 个属性压成同一种灰。 */
+  --type-normal-deep: #706f3e; /* 白字 5.21 */
+  --type-fire-deep: #b45004; /* 白字 5.13 */
+  --type-water-deep: #145bf5; /* 白字 5.46 */
+  --type-electric-deep: #826803; /* 白字 5.34 */
+  --type-grass-deep: #327f05; /* 白字 5.03 */
+  --type-ice-deep: #087872; /* 白字 5.33 */
+  --type-fighting-deep: #dc1009; /* 白字 5.1 */
+  --type-poison-deep: #c20abf; /* 白字 5.13 */
+  --type-ground-deep: #8d6707; /* 白字 5.15 */
+  --type-flying-deep: #6d3bf7; /* 白字 5.8 */
+  --type-psychic-deep: #dc0445; /* 白字 5.06 */
+  --type-bug-deep: #677406; /* 白字 5.15 */
+  --type-rock-deep: #7c6c1d; /* 白字 5.22 */
+  --type-ghost-deep: #704c9e; /* 白字 6.53 */
+  --type-dragon-deep: #520ffa; /* 白字 7.48 */
+  --type-dark-deep: #78563f; /* 白字 6.56 */
+  --type-steel-deep: #6767a8; /* 白字 5.14 */
+  --type-fairy-deep: #d70970; /* 白字 5.05 */
 
   /* 未知属性回退到中性灰，保证不会出现空样式 */
   --type-fallback: var(--type-normal);
+
+ /* --------------------------------------------------------------------------
+     种族值六色（详情页能力值条）
+     --------------------------------------------------------------------------
+     色相按参考图的「红→橙→黄→绿→蓝→紫」对应 HP / 攻击 / 防御 / 特攻 / 特防 / 速度。
+     消费方：lib/statMeta.ts → StatBars 每行内联注入 `--stat`。
+
+     【2026-09-29 口径变更】原来这六色是「单独一组未降饱和值」，因为那时属性色
+     还在莫兰迪降饱和档（S 30%~45%），两条线要拉开。属性色提到 S 80%~90% 之后，
+     这六色若不动就落到 S 45%~71% —— 能力值条会比属性标签更灰，出现**层次倒挂**
+     （次要元素比主要元素更抢眼）。所以同步提到 S 76%~80%，与属性色同量级。
+
+     仍然**不是**属性色的别名：色相是这六条自己的
+     （红 5° / 橙 29° / 黄 43° / 青绿 166° / 蓝 212° / 紫 262°），
+     只服务能力值条这一个场景，不参与属性 badge 与主题色。
+     -------------------------------------------------------------------------- */
+  --stat-hp: #e43525; /* 红 ← #dc5b4e */
+  --stat-attack: #e48125; /* 橙 ← #e08f45 */
+  --stat-defense: #e6ac19; /* 黄 ← #d5a93a */
+  --stat-spAttack: #1ccea5; /* 青绿 ← #3fa88f */
+  --stat-spDefense: #257ee4; /* 蓝 ← #4f8dd4 */
+  --stat-speed: #7737e6; /* 紫 ← #8f6ccb */
+  --stat-fallback: var(--type-normal);
+
+ /* --------------------------------------------------------------------------
+     宝可梦「本体色」——全站主题色（切换宝可梦 → 整页换色）
+     --------------------------------------------------------------------------
+     key 取自 PokéAPI 的 species.color（就是 --poke-<key> 里的 <key>，
+     也是 data/pokedex.json 里的 colorKey）。色相参考 Bulbapedia
+     《List of Pokémon by color》给出的游戏内图鉴调色板。
+
+     【2026-09-29 口径变更】与属性色同步提饱和：有色相的 7 色（红 / 蓝 / 黄 /
+     绿 / 棕 / 紫 / 粉）提到 S 74%~82%；近中性的 3 色（黑 / 灰 / 白）**不引入明显色相**，
+     只按亮度阶梯区分 —— 它们的「身体色」本来就是灰阶，硬加彩度会让黑变蓝紫、白变蓝。
+
+     每色四档：
+       --poke-<k>       主色：装饰色块、斜切底纹（**不做文字底**，见下）
+       --poke-<k>-hi    亮色：渐变上端、悬停
+       --poke-<k>-deep  深色：**实心按钮 / 选中态的底**、斜切收尾、深底上的字
+       --poke-<k>-soft  浅底：面板底、标签底
+
+     为什么实心按钮用 deep 而不是主色：主色是高饱和中间调，白字压上去不达标
+     （实测 13px 白字对比度：电 1.66、冰 1.55、虫 1.98、地面 2.02、草 2.05、
+     黄 1.91、白 2.04 —— 都要 4.5 才过 AA）。deep 档全部 ≥5.0，逐色实测值
+     写在每一行后面的注释里，改色时顺手复算。
+
+     近中性的黑 / 灰 / 白三色，deep 档**刻意用无彩度灰阶**而不是各自色相压深：
+     按色相压深会得到「黑的 deep 变蓝紫（#404059）、白的 deep 变蓝（#5C6F8A）」，
+     且两者亮度只差 1.01 —— 选中态完全分不出来。现在按亮度阶梯给：
+     black #26262C < gray #3F434A < white #6A6F77，两两对比度 ≥ 1.5。
+
+     组件不直接写 --poke-<k>，而是消费内联注入的 --poke / --poke-hi /
+     --poke-deep / --poke-soft（见 lib/themeColors.ts）—— 换色只改这里一处。
+     注：「白色」这类本体色若照原样用会读不清，主色档刻意压深到中灰。
+     -------------------------------------------------------------------------- */
+  --poke-red: #e42e21; /* ← #d2544c S78% */
+  --poke-red-hi: #eb655c;
+  --poke-red-deep: #c82419; /* 白字 5.64 */
+  --poke-red-soft: #fdeceb;
+
+  --poke-blue: #1f76e0; /* ← #4a7fc1 S76% */
+  --poke-blue-hi: #5999e8;
+  --poke-blue-deep: #1a65c1; /* 白字 5.71 */
+  --poke-blue-soft: #ebf3fc;
+
+  --poke-yellow: #e8b417; /* ← #c9a63a S82% */
+  --poke-yellow-hi: #eec753;
+  --poke-yellow-deep: #87680d; /* 白字 5.23 */
+  --poke-yellow-soft: #fdf8ea;
+
+  --poke-green: #31c31d; /* ← #5f9e57 S74% */
+  --poke-green-hi: #53e240;
+  --poke-green-deep: #1f7c13; /* 白字 5.32 */
+  --poke-green-soft: #ecfaeb;
+
+  /* 近中性：主色只带极弱冷调，四档靠亮度区分 */
+  --poke-black: #474752;
+  --poke-black-hi: #666675;
+  --poke-black-deep: #26262c; /* 白字 15.04 */
+  --poke-black-soft: #eeeeef;
+
+  --poke-brown: #c8731e; /* ← #a4794d S74% */
+  --poke-brown-hi: #e39445;
+  --poke-brown-deep: #a05c18; /* 白字 5.2 */
+  --poke-brown-soft: #faf2eb;
+
+  --poke-purple: #7828e2; /* ← #8a6cb0 S76% */
+  --poke-purple-hi: #9d62ea;
+  --poke-purple-deep: #651bc5; /* 白字 8.35 */
+  --poke-purple-soft: #f3ecfc;
+
+  --poke-gray: #808893;
+  --poke-gray-hi: #a4aab2;
+  --poke-gray-deep: #3f434a; /* 白字 9.94 */
+  --poke-gray-soft: #f4f4f5;
+
+  --poke-pink: #e94984; /* ← #cd7c9a S78% */
+  --poke-pink-hi: #f084ac;
+  --poke-pink-deep: #d11a5d; /* 白字 5.23 */
+  --poke-pink-soft: #fdeff4;
+
+  --poke-white: #b0b6bf;
+  --poke-white-hi: #d2d5da;
+  --poke-white-deep: #6a6f77; /* 白字 5.06 */
+  --poke-white-soft: #f8f8f9;
+
+  /* 主题色默认注入（红）—— 组件没显式注入时的兜底，保证 --poke 永远有值 */
+  --poke: var(--poke-red);
+  --poke-hi: var(--poke-red-hi);
+  --poke-deep: var(--poke-red-deep);
+  --poke-soft: var(--poke-red-soft);
 }
 
 /* --------------------------------------------------------------------------
@@ -146,11 +310,6 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-  }
-
-  /* Modal 打开时锁住页面滚动 */
-  body[data-scroll-locked='true'] {
-    overflow: hidden;
   }
 
   /* preflight 会让 <a> 继承颜色并去掉下划线，这里恢复成本站要的样子 */
@@ -204,35 +363,39 @@
 
 /* --- B/C：自绘图形与渐变 --- */
 
-/* 顶栏：底色是半透明纸色 + 背景模糊 */
-@utility header-veil {
-  background-color: color-mix(in srgb, var(--color-paper) 82%, transparent);
-}
-
-/* 弹窗遮罩：品牌深蓝去饱和后的低透明，配轻模糊，不压黑整个屏幕 */
-@utility modal-veil {
-  background-color: color-mix(in srgb, var(--color-ink) 34%, transparent);
-}
-
-/* 详情页立绘底板：上深下浅的极淡渐变 */
+/* 详情页立绘底板：以主题色为主色的亮色斜切（参考稿的做法 —— 立绘浮在
+   整块主题色上，一道深一档的同色相斜切做层次；不再是深蓝底）。
+   全部取 --poke 系变量，10 种 colorKey 自动跟着换，数据驱动零维护。 */
 @utility art-plate {
-  background-image: linear-gradient(180deg, var(--color-surface-2), var(--color-surface));
+  background-color: var(--poke);
+  background-image: linear-gradient(
+    118deg,
+    transparent 0 54%,
+    color-mix(in srgb, var(--poke-deep) 92%, transparent) 54% 70%,
+    transparent 70%
+  );
 }
 
-/* 顶栏的精灵球标识：纯 CSS 画（红 → 深蓝带 → 米白 + 中心点），不占图片资源 */
+/* 侧栏的精灵球标识：纯 CSS 画（红 → 深色带 → 白 + 中心点），不占图片资源。
+   2026-09-29 调整：原来 26px、描边用 --color-navy —— 而侧栏底色就是深蓝，
+   描边与背景几乎同色，整个球「融」进底里只剩一坨暗红；红色档也太灰，
+   缩到 30px 后看不出是精灵球。现在：加大到 30px、描边用比外壳更深的蓝黑、
+   红色向官方 #EE1515 靠一档（这是品牌标识，允许比正文配色鲜艳）。
+   2026-10 第四轮备注：侧栏底色已改浅（见下方 app-rail），这里的深色描边
+   在白底上依然成立 —— #101f36 比侧栏任何一级白色都深得多，不会「融」进去。 */
 @utility brand-mark {
   position: relative;
   box-sizing: border-box;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   flex: none;
   border-radius: 50%;
-  border: 2px solid var(--color-navy);
+  border: 2px solid #101f36;
   background-image: linear-gradient(
     180deg,
-    var(--color-red) 0 44%,
-    var(--color-navy) 44% 56%,
-    var(--color-surface) 56% 100%
+    color-mix(in srgb, var(--color-red) 68%, #ee1515) 0 44%,
+    #101f36 44% 56%,
+    #fff 56% 100%
   );
 
   &::after {
@@ -240,13 +403,28 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 9px;
-    height: 9px;
-    margin: -4.5px 0 0 -4.5px;
+    width: 11px;
+    height: 11px;
+    margin: -5.5px 0 0 -5.5px;
     border-radius: 50%;
-    background: var(--color-surface);
-    border: 2px solid var(--color-navy);
+    background: #fff;
+    border: 2px solid #101f36;
   }
+}
+
+/* 侧栏底部的装饰斜线（参考稿左下角那三道 ///）。
+   用 repeating-linear-gradient 画，比塞一个 SVG 文件轻。
+   2026-10 第四轮：侧栏底色从深蓝改成白色（见 app-rail），原来「压到 38% 白」
+   的斜线在白底上会完全看不见，改用品牌红——参考稿左下角那几道本来就是红色。 */
+@utility rail-slash {
+  display: block;
+  width: 42px;
+  height: 13px;
+  background-image: repeating-linear-gradient(
+    118deg,
+    color-mix(in srgb, var(--color-red) 55%, transparent) 0 3px,
+    transparent 3px 11px
+  );
 }
 
 /* 单线进化的箭头：一条线 + 一个旋转 45° 的小方块，避免塞图片资源 */
@@ -324,12 +502,25 @@
   color: color-mix(in srgb, var(--tint) 72%, #1f2a35);
 }
 
-/* 属性筛选芯片的**选中态**：实心主属性色。
-   掺入 38% 的深色（--color-ink 的更深版本）是为了把白字的对比度拉到 7:1 以上，
-   纯属性色配白字在浅属性（冰 / 妖精 / 飞行）上会糊。 */
+/* 详情页头部的属性徽章：参考稿是**实心**胶囊 + 白字。
+   与 type-chip 分开是必须的 —— type-chip 还要给图鉴页的筛选芯片当未选中态，
+   那块一旦改成实心就分不出「选没选」。
+   **掺深比例是 44%，不是「越深越好」——这个数是算出来的，不是拍的。**
+   2026-09-29 属性色提饱和之后，原来的 62% 配方失效：主色本身变亮变艳，
+   掺 62% 深色也压不住白字，18 个属性里 12 个掉到 4.5 以下（最差的冰只有 3.23）。
+   改成 44% 后全档 ≥4.88（冰 4.88 / 电 5.11 / 虫 5.69 …）——
+   再往上加深色虽然对比度更高，但会把这 12 个属性压成同一种灰，
+   「一眼分出是哪个属性」这个目的就废了。 */
+@utility type-chip-solid {
+  background-color: color-mix(in srgb, var(--tint) 44%, #1f2a35);
+  color: #fff;
+}
+
+/* 属性筛选芯片的**选中态**：同 type-chip-solid 的配方（同一个 44%）。
+   两者必须一致，否则「详情页的电」与「图鉴页选中的电」会是两种颜色。 */
 @utility type-chip-on {
-  background-color: color-mix(in srgb, var(--tint) 62%, #1f2a35);
-  border-color: color-mix(in srgb, var(--tint) 62%, #1f2a35);
+  background-color: color-mix(in srgb, var(--tint) 44%, #1f2a35);
+  border-color: color-mix(in srgb, var(--tint) 44%, #1f2a35);
   color: #fff;
 }
 
@@ -356,14 +547,84 @@
   color: color-mix(in srgb, var(--color-yellow) 62%, #3a3222);
 }
 
-/* 种族值进度条的填充 */
-@utility tint-bar {
-  background-color: color-mix(in srgb, var(--tint) 62%, #fff);
+/* 种族值进度条的填充：每行一个色（--stat 由 StatBars 内联注入，见 lib/statMeta.ts） */
+@utility stat-bar-fill {
+  background-color: var(--stat);
+}
+
+/* 「基本信息」页的简介只露 4 行，全文留给「图鉴描述」页 */
+@utility intro-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
 }
 
 /* 种族值总和的数字 */
 @utility tint-total {
   color: color-mix(in srgb, var(--tint) 70%, #1f2a35);
+}
+
+/* --------------------------------------------------------------------------
+   形态（forms）卡片
+   --------------------------------------------------------------------------
+   未选中 = 普通描边 + 卡片底；选中 = 主题色描边 + 主题色浅底。
+   选中态刻意**不用实心主题色**：这一栏是缩略图列表，实心底会把 96px 的小图吃掉，
+   而且参考图里选中的那一条就是「白底 + 红框」。
+   注意：本 @utility 只写 border-color / background-color，
+   使用时不要在同元素上再叠 border-* / bg-* 色值类（@utility 排在内置之前会被顶掉）。
+   -------------------------------------------------------------------------- */
+@utility form-chip {
+  border-color: var(--color-line);
+  background-color: var(--color-surface);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--poke) 38%, var(--color-line));
+  }
+}
+
+@utility form-chip-on {
+  border-color: var(--poke);
+  background-color: var(--poke-soft);
+}
+
+/* 形态列表的纵向滚动区：条数差别很大（洛托姆 6 / 皮卡丘 17），固定高度 + 细滚动条。
+   不加这条的话 Windows 上会是 ~15px 的粗滚动条，把列表挤窄且很难看。 */
+@utility form-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+/* 「近年来常见的形态」横条：横向滚动但**不显示滚动条**
+   （这一栏只有 84px 高，Windows 上常驻的横向滚动条会压住缩略图） */
+@utility strip-track {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 「近年来常见的形态」横条两端的圆形翻页按钮 */
+@utility strip-nav {  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface);
+  color: var(--color-ink-2);
+
+  &:hover {
+    border-color: var(--poke);
+    background-color: var(--poke-soft);
+    color: var(--color-ink);
+  }
 }
 
 /* 卡片立绘底座的光晕：用主属性色做一圈很淡的底，把不同属性区分开又不抢眼 */
@@ -407,6 +668,214 @@
   background-color: color-mix(in srgb, var(--tint) 7%, var(--color-surface));
   box-shadow: inset 3px 0 0 0 var(--tint), var(--shadow-sm);
 }
+
+/* --------------------------------------------------------------------------
+   3c. 图鉴应用外壳：左侧竖导航 + 主面板 + 右侧信息面板
+   --------------------------------------------------------------------------
+   主题色全部消费内联注入的 --poke / --poke-hi / --poke-deep / --poke-soft
+   （见 lib/themeColors.ts），切换宝可梦时整块换色。
+   这些 @utility 自带背景 / 描边 / 阴影，按本站约定**不与同元素的
+   bg-* / border-* / shadow-* 混用**（@utility 排在内置 utility 之前会被顶掉）。
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   外壳底：浅色方案（2026-10 第四轮，YJ 要求改回参考稿一的白底撞色风）
+   --------------------------------------------------------------------------
+   此前是「品牌深蓝实色 + 两道斜切色块」。现在改成浅色打底，斜切条纹 / 精灵球
+   圆环 / 点阵圆这些装饰图形整体挪到 components/BgDecor.tsx 的 SVG 里画
+   （原因见该组件的文件头注释：这组图形有 6+ 个彼此有相对位置关系的独立形状，
+   CSS 渐变 + 伪元素两套坐标系很难对齐）。
+
+   这里只保留最基础的浅色打底，职责更单一：想调条纹位置去改 BgDecor.tsx，
+   想调整体冷暖色调才来改这里。
+   -------------------------------------------------------------------------- */
+@utility app-frame {
+  position: relative;
+  background-color: var(--color-paper);
+  background-image: linear-gradient(135deg, #ffffff 0%, var(--color-paper) 55%, var(--color-paper-soft) 100%);
+}
+
+/* 左侧竖导航条：2026-10 第四轮从「深蓝实色」改成「白色悬浮卡」，
+   参考稿侧栏本来就是白底。投影保持不动（悬浮卡需要投影才浮得起来），
+   只是换了底色和阴影基调（白底上深蓝投影比白底上深蓝糊的投影更克制）。 */
+@utility app-rail {
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+/* 顶栏：浅色方案里顶栏与页面背景融为一体，不再单独起一条深色带，
+   这样右上角的背景装饰（圆环/条纹）能从顶栏区域透出来。 */
+@utility app-topbar {
+  background-color: transparent;
+}
+
+/* 顶栏搜索框：2026-10 第四轮从「深底半透明白框」改成「白底描边」，
+   配合浅色顶栏。 */
+@utility topbar-search {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-line);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-sm);
+
+  &::placeholder {
+    color: var(--color-ink-3);
+  }
+  &:focus {
+    border-color: color-mix(in srgb, var(--poke-hi) 70%, var(--color-line));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--poke) 18%, transparent);
+  }
+}
+
+/* 顶栏右侧的圆形图标按钮（参考稿里搜索框右边那两颗）。
+   2026-09-29 版本：深底顶栏上用白底才「浮」得起来，常态不需要描边，
+   hover 才加。2026-10 第四轮顶栏本身已经是浅色，白底按钮在浅色顶栏上
+   不加描边会糊成一片，所以常态也要给描边 + 投影，hover 再强化成主题色。 */
+@utility topbar-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface);
+  color: var(--color-navy);
+  box-shadow: var(--shadow-sm);
+
+  &:hover {
+    background-color: var(--color-surface-2);
+    border-color: var(--poke-hi);
+    color: var(--color-ink);
+  }
+}
+
+/* 导航项：2026-10 第四轮，未选中态从「半透明白字」改成深灰字（配合白底侧栏）；
+   选中态不变 —— 实心主题色 + 白字这个配方跟底色深浅无关，继续用。 */
+@utility rail-link {
+  color: var(--color-ink-2);
+  background-color: transparent;
+
+  &:hover {
+    background-color: var(--color-surface-2);
+  }
+}
+@utility rail-link-on {
+  color: #fff;
+  background-color: var(--poke-deep);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--poke-deep) 40%, transparent);
+}
+
+/* 主面板 / 信息面板：浅色卡片 */
+@utility panel-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* 右侧信息面板的卡片：比主面板低半档的浅蓝底。
+   参考稿里右栏是一叠浅色卡片浮在深蓝上、主面板才是纯白 ——
+   两处同色就分不出主次了。 */
+@utility panel-card-soft {
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+* 主面板顶部主题色斜切头（参考图的红色斜切块） */
+@utility panel-band {
+  background-image: linear-gradient(102deg, var(--poke) 0 56%, var(--poke-deep) 56% 100%);
+}
+
+/* 右侧信息卡顶部的「宣传飘带」（参考图里那条红色斜切角标）。
+   两条斜切叠出来的手感与 panel-band 一致，只是角度更缓（飘带矮）。
+
+   为什么颜色写在这里而不是用内置的 `bg-* / text-*`：
+   本文件开头 D 节记过 —— `@utility` 的产物排在内置 utility **之前**，
+   同元素上再写 `text-white` 会把这里的 `color` 顶掉（写 `bg-(--poke-deep)`
+   同理）。所以颜色只在 @utility 里定义一次，JSX 那侧不重复写。
+   切割点 78% / 88% 是按飘带实际高度（约 26px）调出来的：
+   用 panel-band 的 56% 会切得过陡，看起来像被削掉一角而不是斜切。 */
+@utility promo-ribbon {
+  color: #fff;
+  background-color: var(--poke-deep);
+  background-image: linear-gradient(
+    102deg,
+    transparent 0 78%,
+    color-mix(in srgb, #000 22%, transparent) 78% 88%,
+    transparent 88%
+  );
+  clip-path: polygon(0 0, 100% 0, 96.5% 100%, 0 100%);
+}
+
+/* 主题色实心按钮（叫一声 / 主行动）—— 底色用 deep 档保证白字达标（见文件头注释） */
+@utility theme-fill {
+  background-color: var(--poke-deep);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--poke-deep) 38%, transparent);
+}
+
+/* Tab：未选中浅字，选中 deep 档实心（与按钮同一口径，保证白字达标） */
+@utility tab-btn-on {
+  color: #fff;
+  background-color: var(--poke-deep);
+}
+
+/* 信息面板标题前的小色条（主题色） */
+@utility theme-rule {
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  flex: none;
+  border-radius: 2px;
+  background-color: var(--poke);
+}
+
+/* --------------------------------------------------------------------------
+   3d. 对齐参考稿的三件套（2026-09-29 第三轮）
+   --------------------------------------------------------------------------
+   参考稿（ChatGPT 生成的设计稿）与旧实现的结构差异集中在四处：
+   外壳留白更大、左栏是悬浮圆角卡、主卡内部还要再分一层小卡、
+   以及每张卡的标题栏带一个圆形图标。这四条都在下面定义一次、全站复用。
+   -------------------------------------------------------------------------- */
+
+/* 卡片内部的小卡（简介 / 能力值 / 形态…）：
+   比 panel-card 低一级，用次级面 + 更小圆角，靠层次区分而不是靠叠阴影 */
+@utility sub-card {
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+/* 右侧信息面板每张卡的标题栏：图标 + 标题 + 下分隔线 */
+@utility panel-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+* 标题栏左侧的圆形图标底。
+   底色用 --poke-deep 而不是 --poke：这是本站「实心底一律用 deep 档」的统一口径，
+   主色是高饱和的中间调（见 :root 的 --poke-* 注释），白图形压在黄 / 灰 / 白档上按不住。 */
+@utility panel-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--poke-deep);
+  color: #fff;
+}
+
 
 /* ==========================================================================
    需要暗色主题时，加一个 [data-theme='dark'] 块覆盖上面的 @theme 变量即可；
