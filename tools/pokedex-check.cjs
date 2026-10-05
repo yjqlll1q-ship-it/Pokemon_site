@@ -89,7 +89,7 @@ async function main() {
     ok('[1] 首屏渲染出结果卡片', firstLoad === true, firstLoad);
 
     const total0 = await b.ev(TOTAL);
-    ok('[1] 首屏显示共 386 只命中前三世代全部', total0 === 386, total0);
+    ok('[1] 首屏显示共 493 只命中前四世代全部', total0 === 493, total0);
 
     const ids0 = await b.ev(IDS);
     ok('[1] 首屏每页 48 张卡', ids0.length === 48, ids0.length);
@@ -126,8 +126,8 @@ async function main() {
     ok('[2] 不存在的关键词结果为 0（不是忽略条件）', q2 === 0, q2);
 
     await b.ev(CLICK('[data-testid=search-input] ~ button'));
-    const q3 = await waitFor(b, `${TOTAL}===386 && ${TOTAL}`);
-    ok('[2] 清空搜索后恢复 386 只', q3 === 386, q3);
+    const q3 = await waitFor(b, `${TOTAL}===493 && ${TOTAL}`);
+    ok('[2] 清空搜索后恢复 493 只', q3 === 493, q3);
 
     /* ---------------------- [3] 按属性筛选 ---------------------- */
     const fireCount = await b.ev(
@@ -184,8 +184,8 @@ async function main() {
     );
 
     await b.ev(CLICK('[data-testid=reset]'));
-    const resetTotal = await waitFor(b, `${TOTAL}===386 && ${TOTAL}`);
-    ok('[3] 清除全部筛选后回到 386 只', resetTotal === 386, resetTotal);
+    const resetTotal = await waitFor(b, `${TOTAL}===493 && ${TOTAL}`);
+    ok('[3] 清除全部筛选后回到 493 只', resetTotal === 493, resetTotal);
 
     /* ---------------------- [4] 世代 / 种族值 / 排序 ---------------------- */
     await b.ev(CLICK('[data-testid=advanced-toggle]'));
@@ -200,13 +200,13 @@ async function main() {
     ok('[4] 第一世代结果里最大编号 ≤ 151', gen1Max !== null && gen1Max <= 151, gen1Max);
 
     await b.ev(CLICK('[data-testid=reset]'));
-    await waitFor(b, `${TOTAL}===386 && ${TOTAL}`);
+    await waitFor(b, `${TOTAL}===493 && ${TOTAL}`);
 
     // 种族值总和 ≥ 600 + 按总和降序
     await b.ev(SET_INPUT('[data-testid=stat-total-min]', '600'));
-    await waitFor(b, `(()=>{const t=document.querySelector('[data-testid=result-count]');return t&&!/386/.test(t.textContent);})()`);
+    await waitFor(b, `(()=>{const t=document.querySelector('[data-testid=result-count]');return t&&!/493/.test(t.textContent);})()`);
     const highTotal = await b.ev(TOTAL);
-    ok('[4] 种族值总和 ≥600 后结果收敛', highTotal > 0 && highTotal < 386, highTotal);
+    ok('[4] 种族值总和 ≥600 后结果收敛', highTotal > 0 && highTotal < 493, highTotal);
 
     const statTexts = await b.ev(
       `(()=>[...document.querySelectorAll('[data-testid=result-card] [data-testid=card-foot]')]
@@ -225,10 +225,10 @@ async function main() {
     await b.ev(CLICK('[data-testid=order]'));
     await sleep(900);
     const topId = await b.ev(`(()=>{const n=${IDS};return n[0];})()`);
-    ok('[4] 按种族值总和降序时，第一名是超梦 #150', topId === 150, topId);
+    ok('[4] 按种族值总和降序时，第一名是阿尔宙斯 #493（720）', topId === 493, topId);
 
     await b.ev(CLICK('[data-testid=reset]'));
-    await waitFor(b, `${TOTAL}===386 && ${TOTAL}`);
+    await waitFor(b, `${TOTAL}===493 && ${TOTAL}`);
 
     /* ---------------------- [5] 分页 ---------------------- */
     const page1 = await b.ev(IDS);
@@ -320,7 +320,7 @@ async function main() {
 
     // 点属性卡 → 回到列表并按该属性筛选
     /*
-     * 读芯片计数作为期望值。切回列表视图时旧的 386 条结果会先渲染一帧，
+     * 读芯片计数作为期望值。切回列表视图时旧的 493 条结果会先渲染一帧，
      * 所以不能「等到有卡片」就算数 —— 必须等到计数真的收敛到该属性的数量。
      */
     const psychicCount = await b.ev(
@@ -402,6 +402,57 @@ async function main() {
 
     /* ---------------------- [9] 控制台 ---------------------- */
     ok('[9] 运行期无 JS 异常 / console.error', b.consoleErrors.length === 0, b.consoleErrors.slice(0, 3));
+
+    /* --------------- [10] 接口不可用时必须说人话（排 [9] 之后） --------------- */
+    /*
+     * 顺序是刻意的：它**必须排在 [9] 之后**。
+     * 为了让接口失败，下面主动掐断 /api/*，浏览器会把被拦的请求记成
+     * `net::ERR_BLOCKED_BY_CLIENT` 的 console error —— 先跑 [9]，才不会被自己制造的
+     * 噪声打成一个假失败。
+     *
+     * 这一段存在的理由：真实发生过「接口连不上 → 界面显示『共 0 只』→ 用户以为
+     * 数据被删了」。所以断言口径是「失败时会不会谎报 0」和「能不能一键恢复」，
+     * 不是「有没有一个 error 元素」。
+     *
+     * 反向验证：不掐断 /api/* 的话，「[10] 出现失败态」必定不成立。
+     */
+    await b.setViewport(1280, 900);
+    await b.send('Network.enable');
+    await b.send('Network.setBlockedURLs', { urls: ['*/api/*'] });
+    // 用整页导航回到干净地址（不带前几段留下的筛选参数），结果数才是确定的 493
+    await b.send('Page.navigate', { url: `${BASE}/pokedex` });
+    await sleep(1600);
+
+    const errText = await waitFor(
+      b,
+      `(()=>{const e=document.querySelector('[data-testid=error]');return e?e.textContent:'';})()`,
+      9000,
+    );
+    ok('[10] 接口不可用时页面给出失败态', /无法连接本地数据服务/.test(errText || ''), errText);
+
+    const countText = await b.ev(
+      `(()=>{const t=document.querySelector('[data-testid=result-count]');return t?t.textContent:'';})()`,
+    );
+    ok(
+      '[10] 失败态不谎报「共 0 只」',
+      !/共\s*0\s*只/.test(countText) && /数据不可用/.test(countText),
+      countText,
+    );
+    ok(
+      '[10] 失败态给出「重试」按钮',
+      (await b.ev(`!!document.querySelector('[data-testid=retry]')`)) === true,
+    );
+    await b.screenshot(path.join(SHOTS, 'p5-pokedex-error.png'));
+
+    // 恢复网络 → 点重试必须真的把数据拉回来，否则「重试」只是个装饰
+    await b.send('Network.setBlockedURLs', { urls: [] });
+    await b.ev(CLICK('[data-testid=retry]'));
+    const backTotal = await waitFor(b, `${TOTAL}===493 && ${TOTAL}`, 12000);
+    ok('[10] 点「重试」后数据真的回来了（493 只）', backTotal === 493, backTotal);
+    ok(
+      '[10] 重试成功后失败态消失',
+      (await b.ev(`!document.querySelector('[data-testid=error]')`)) === true,
+    );
   } finally {
     b.close();
   }

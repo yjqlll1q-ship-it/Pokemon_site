@@ -61,17 +61,17 @@ async function main() {
   /* ------------------------------ 筛选面 ------------------------------ */
   const facets = await get('/api/facets');
   ok('facets: 200', facets.status === 200, facets.status);
-  ok('facets: 范围内共 386 只', facets.body?.total === 386, facets.body?.total);
+  ok('facets: 范围内共 493 只', facets.body?.total === 493, facets.body?.total);
   ok('facets: 18 种属性', facets.body?.types?.length === 18, facets.body?.types?.length);
-  ok('facets: 3 个世代', facets.body?.generations?.length === 3, facets.body?.generations?.length);
+  ok('facets: 4 个世代', facets.body?.generations?.length === 4, facets.body?.generations?.length);
   ok(
-    'facets: 世代人数 151 / 100 / 135',
-    JSON.stringify(facets.body?.generations?.map((g) => g.count)) === '[151,100,135]',
+    'facets: 世代人数 151 / 100 / 135 / 107',
+    JSON.stringify(facets.body?.generations?.map((g) => g.count)) === '[151,100,135,107]',
     facets.body?.generations?.map((g) => g.count),
   );
   ok(
-    'facets: 属性计数之和 ≥ 386（双属性会被计两次）',
-    (facets.body?.types ?? []).reduce((s, t) => s + t.count, 0) >= 386,
+    'facets: 属性计数之和 ≥ 493（双属性会被计两次）',
+    (facets.body?.types ?? []).reduce((s, t) => s + t.count, 0) >= 493,
     (facets.body?.types ?? []).reduce((s, t) => s + t.count, 0),
   );
   ok('facets: 种族值区间上界 > 下界', (facets.body?.statTotal?.max ?? 0) > (facets.body?.statTotal?.min ?? 0));
@@ -79,7 +79,7 @@ async function main() {
 
   /* ------------------------------ 默认列表 ------------------------------ */
   const base = await get('/api/pokedex');
-  ok('默认查询: total = 386', base.body?.total === 386, base.body?.total);
+  ok('默认查询: total = 493', base.body?.total === 493, base.body?.total);
   ok('默认查询: 默认每页 48 条', base.body?.items?.length === 48, base.body?.items?.length);
   ok('默认查询: 按编号升序，第一项是 #1', base.body?.items?.[0]?.id === 1, base.body?.items?.[0]?.id);
   ok('默认查询: 每项都有中文名与立绘', allOf(base.body?.items ?? [], (it) => it.nameZh && it.sprite) === true);
@@ -111,7 +111,7 @@ async function main() {
 
   /* ------------------------------ 属性筛选 ------------------------------ */
   const fire = await get('/api/pokedex?types=fire&pageSize=200');
-  ok('火属性: 结果数 < 386（确实筛掉了东西）', (fire.body?.total ?? 0) < 386, fire.body?.total);
+  ok('火属性: 结果数 < 493（确实筛掉了东西）', (fire.body?.total ?? 0) < 493, fire.body?.total);
   ok(
     '火属性: 返回的每一只都真的有火属性',
     allOf(fire.body?.items ?? [], (it) => it.types.includes('fire')) === true,
@@ -189,7 +189,7 @@ async function main() {
     (high.body?.items ?? []).every((it, i, arr) => i === 0 || arr[i - 1].statTotal >= it.statTotal) === true,
     (high.body?.items ?? []).slice(0, 5).map((it) => it.statTotal),
   );
-  ok('降序第一名是 680 级的神兽', (high.body?.items?.[0]?.statTotal ?? 0) === 680, high.body?.items?.[0]);
+  ok('降序第一名是 720 级的阿尔宙斯', (high.body?.items?.[0]?.statTotal ?? 0) === 720, high.body?.items?.[0]);
 
   const slow = await get('/api/pokedex?statKey=speed&statMin=150&pageSize=50');
   ok('速度 ≥150: 每项速度达标', allOf(slow.body?.items ?? [], (it) => it.stats.speed >= 150) === true, slow.body?.total);
@@ -231,7 +231,7 @@ async function main() {
   const p1 = await get('/api/pokedex?page=1&pageSize=24');
   const p2 = await get('/api/pokedex?page=2&pageSize=24');
   ok('分页: 第一页 24 条', p1.body?.items?.length === 24, p1.body?.items?.length);
-  ok('分页: pageCount = ceil(386/24) = 17', p1.body?.pageCount === 17, p1.body?.pageCount);
+  ok('分页: pageCount = ceil(493/24) = 21', p1.body?.pageCount === 21, p1.body?.pageCount);
   ok(
     '分页: 两页没有重叠',
     (p1.body?.items ?? []).every((a) => !(p2.body?.items ?? []).some((b) => b.id === a.id)) === true,
@@ -292,7 +292,7 @@ async function main() {
   /* --------------------------- 反向验证（自检） --------------------------- */
   if (SELF_TEST) {
     const before = failures.length;
-    ok('[自检] 这个断言必须失败：386 应该等于 999', 386 === 999);
+    ok('[自检] 这个断言必须失败：493 应该等于 999', 493 === 999);
     if (failures.length === before + 1) {
       failures.length = before; // 把这个故意的失败收回去
       console.log('\n[api-check] 自检通过：框架确实会捕获错误断言。');

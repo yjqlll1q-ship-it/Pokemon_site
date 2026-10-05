@@ -48,7 +48,7 @@ function RelationRow({ label, items, empty }: { label: string; items: TypeRef[];
 
 /**
  * 「按属性分类」视图。
- * 18 种属性各一张卡：前三世代里有几只 + 防守相性 + 招式克制。
+ * 18 种属性各一张卡：前四世代里有几只 + 防守相性 + 招式克制。
  * 相克数据来自数据库的 type_effect 表（建库时从 PokéAPI 转成进攻方视角的矩阵）。
  * 点卡片任意位置即可按该属性筛选列表。
  */

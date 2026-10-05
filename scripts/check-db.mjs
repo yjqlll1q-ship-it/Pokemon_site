@@ -81,14 +81,16 @@ check('无外键违规', () => db.prepare('PRAGMA foreign_key_check').all().leng
 /* 2. 数据层                                                                    */
 /* -------------------------------------------------------------------------- */
 
-check('范围内共 386 只', () => {
+/* 前四世代 = 全国图鉴 #1–493。改 SCOPE_MAX 时这里同步改，别让它变成假通过。 */
+const SCOPE_TOTAL = 493;
+check(`范围内共 ${SCOPE_TOTAL} 只`, () => {
   const n = count('SELECT COUNT(*) AS c FROM pokemon WHERE in_scope = 1');
-  return n === 386 ? true : `实际 ${n}`;
+  return n === SCOPE_TOTAL ? true : `实际 ${n}`;
 });
-check('范围内的编号恰好是 1–386（无缺号/重号）', () => {
+check(`范围内的编号恰好是 1–${SCOPE_TOTAL}（无缺号/重号）`, () => {
   const rows = db.prepare('SELECT id FROM pokemon WHERE in_scope = 1 ORDER BY id').all().map((r) => r.id);
-  if (rows.length !== 386) return `行数 ${rows.length}`;
-  for (let i = 0; i < 386; i++) if (rows[i] !== i + 1) return `第 ${i} 项是 #${rows[i]}`;
+  if (rows.length !== SCOPE_TOTAL) return `行数 ${rows.length}`;
+  for (let i = 0; i < SCOPE_TOTAL; i++) if (rows[i] !== i + 1) return `第 ${i} 项是 #${rows[i]}`;
   return true;
 });
 check('18 种属性齐全', () => count('SELECT COUNT(*) AS c FROM type') === 18);
@@ -246,9 +248,14 @@ const equals = (label, fn, expected) =>
 equals('第一世代 151 只', () => search({ generation: 1 }), 151);
 equals('第二世代 100 只', () => search({ generation: 2 }), 100);
 equals('第三世代 135 只', () => search({ generation: 3 }), 135);
-check('三个世代合计 386 只', () => {
-  const sum = search({ generation: 1 }) + search({ generation: 2 }) + search({ generation: 3 });
-  return sum === 386 ? true : sum;
+equals('第四世代 107 只', () => search({ generation: 4 }), 107);
+check(`四个世代合计 ${SCOPE_TOTAL} 只`, () => {
+  const sum =
+    search({ generation: 1 }) +
+    search({ generation: 2 }) +
+    search({ generation: 3 }) +
+    search({ generation: 4 });
+  return sum === SCOPE_TOTAL ? true : sum;
 });
 equals('关键词「皮卡丘」命中 1 只', () => search({ q: '皮卡丘' }), 1);
 /*
@@ -303,11 +310,11 @@ check('幻之宝可梦 > 0 只（梦幻 / 雪拉比 / 基拉祈 / 代欧奇希�
   const n = search({ mythical: true });
   return n >= 4 ? true : n;
 });
-check('范围外（第四世代）没有被算进 in_scope', () => {
-  const n = count('SELECT COUNT(*) AS c FROM pokemon WHERE in_scope = 1 AND id > 386');
+check(`范围外（#${SCOPE_TOTAL + 1} 及以后）没有被算进 in_scope`, () => {
+  const n = count(`SELECT COUNT(*) AS c FROM pokemon WHERE in_scope = 1 AND id > ${SCOPE_TOTAL}`);
   return n === 0 ? true : n;
 });
-check('存在链上第四世代成员（用于把进化树画完整）', () => {
+check('存在链上更高世代成员（用于把进化树画完整）', () => {
   const n = count('SELECT COUNT(*) AS c FROM pokemon WHERE in_scope = 0');
   return n > 0 ? true : n;
 });

@@ -147,6 +147,43 @@ const EVOWIDE = [
   ['hint', '[data-testid="evolution"] > div > p'],
 ];
 
+/**
+ * 地区图鉴总览（/regions）。
+ *
+ * 计数那个 span 没有 data-testid，走结构选（第 3 个子块的第 2 个 span）。
+ * 这里刻意**不采卡片编号**：编号是数据，不是样式（data:check 管那件事）。
+ */
+const REGIONS = [
+  ['title', '[data-testid="regions-title"]'],
+  ['list', '[data-testid="region-list"]'],
+  ['card', '[data-testid="region-card"]'],
+  ['cardTitle', '[data-testid="region-card"] h2'],
+  ['cardRange', '[data-testid="region-card"] > div:nth-child(1) > span:last-child'],
+  ['cardBlurb', '[data-testid="region-card"] > p:nth-child(2)'],
+  ['cardThumb', '[data-testid="region-card"] img'],
+  ['cardCount', '[data-testid="region-card"] > div:nth-child(3) > span:last-child'],
+  ['cardFoot', '[data-testid="region-card"] > p:last-child'],
+];
+
+/**
+ * 地区详情（/regions/4 神奥）。
+ *
+ * 第 3 张卡是 #389 土台龟（草/地面，双属性）—— 单属性卡看不出属性胶囊换行/间距，
+ * 所以双属性那张必须单独采一次。地区页是新页面，这里不采就等于没门禁。
+ */
+const REGION_DETAIL = [
+  ['title', '[data-testid="region-title"]'],
+  ['count', '[data-testid="region-count"]'],
+  ['list', '[data-testid="region-pokemon-list"]'],
+  ['card', '[data-testid="region-pokemon-card"]'],
+  ['cardImg', '[data-testid="region-pokemon-card"] img'],
+  ['cardFoot', '[data-testid="region-pokemon-card"] [data-testid="card-foot"]'],
+  ['cardFootStrong', '[data-testid="region-pokemon-card"] [data-testid="card-foot"] b'],
+  ['badge', '[data-testid="region-pokemon-card"] [data-testid="type-badge"]'],
+  ['card2', '[data-testid="region-pokemon-list"] > li:nth-child(3) [data-testid="region-pokemon-card"]'],
+  ['badge2', '[data-testid="region-pokemon-list"] > li:nth-child(3) [data-testid="type-badge"]'],
+];
+
 
 
 /**
@@ -270,7 +307,21 @@ async function main() {
             firstName:item?item.textContent.trim():null};
   })()`);
 
-  /* ---- 5. 移动端 390×844 ---- */
+  /* ---- 5. 地区图鉴（总览 + 详情） ---- */
+  await goto('/regions');
+  snap.regions = await b.ev(SNAP_FN(REGIONS));
+  // 地区卡里的代表宝可梦必须走 96px 缩略图；采 naturalWidth 才能发现「又换成大头像了」
+  snap.regions.__thumbProbe = await b.ev(
+    `[...document.querySelectorAll('[data-testid="region-card"] img')].map(i=>({w:i.naturalWidth,h:i.naturalHeight}))`,
+  );
+
+  await goto('/regions/4');
+  snap.regionDetail = await b.ev(SNAP_FN(REGION_DETAIL));
+  snap.regionDetail.__count = await b.ev(
+    `document.querySelector('[data-testid="region-pokemon-list"]').children.length`,
+  );
+
+  /* ---- 6. 移动端 390×844 ---- */
   await b.setViewport(390, 844);
   await goto('/');
   snap.mobile = await b.ev(`(()=>{

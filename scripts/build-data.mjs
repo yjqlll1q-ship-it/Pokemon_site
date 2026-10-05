@@ -3,9 +3,9 @@
  * ---------------------------------------------------------------------------
  * 把 PokéAPI 的数据固化成静态 JSON，并把官方立绘下载到 public/sprites/。
  *
- * 本版范围：**第一~第三世代（全国图鉴 #1–386）全部宝可梦**。
- *   为了进化链完整，链上出现的第四世代及以后成员（Tangrowth / Magnezone / Budew …）
- *   也会一并抓下来，但它们带 generation=4+，不进图鉴查询的默认结果集。
+ * 本版范围：**第一~第四世代（全国图鉴 #1–493）全部宝可梦**。
+ *   为了进化链完整，链上出现的第五世代及以后成员（如 Rhyperior 之后的跨代进化）
+ *   也会一并抓下来，但它们带 generation=5+，不进图鉴查询的默认结果集。
  *
  * 形态（forms）：另有 40 只带额外形态（超级进化、地区形态、超极巨化、洛托姆的家电形态…），
  *   每只写进 `forms` 数组（首位是基本形态），立绘落在 public/sprites/forms/{形态id}.png。
@@ -45,15 +45,15 @@ const CACHE_DIR = path.join(ROOT, '.cache', 'pokeapi');
 const FORCE = process.argv.includes('--force');
 const API = 'https://pokeapi.co/api/v2';
 
-/** 抓取范围：全国图鉴 #1–386 = 第一~第三世代 */
+/** 抓取范围：全国图鉴 #1–493 = 第一~第四世代 */
 const SCOPE_MIN = 1;
-const SCOPE_MAX = 386;
+const SCOPE_MAX = 493;
 
 /**
  * 额外纳入数据的「吉祥物」编号。
- * #479 洛托姆是本站首页整机造型的灵感来源，也是详情主界面的默认展示对象，
- * 所以要把它的资料一并抓下来。它不在前三世代，inScope 仍按编号判定为 false，
- * 不会进图鉴查询的结果集。
+ * #479 洛托姆是本站首页整机造型的灵感来源，也是详情主界面的默认展示对象。
+ * 它在第四世代范围内（#387–493）后本就属于 inScope；这个数组保留是为了
+ * 万一以后把 SCOPE_MAX 调回去时它不会从数据里消失。
  */
 const EXTRA_IDS = [479];
 
@@ -329,14 +329,16 @@ async function buildTypes() {
 /* 世代                                                                        */
 /* -------------------------------------------------------------------------- */
 
-const GENERATION_KEYS = ['generation-i', 'generation-ii', 'generation-iii'];
-const REGION_FALLBACK = { 1: '关都', 2: '城都', 3: '丰缘' };
-const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386] };
+const GENERATION_KEYS = ['generation-i', 'generation-ii', 'generation-iii', 'generation-iv'];
+const REGION_FALLBACK = { 1: '关都', 2: '城都', 3: '丰缘', 4: '神奥' };
+const GEN_RANGE = { 1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493] };
+/** id → 中文数字（兜底世代名用；PokéAPI 有 zh 名时以它为准） */
+const GEN_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
 
 async function buildGenerations() {
   return mapPool(GENERATION_KEYS, 3, async (key, i) => {
     const id = i + 1;
-    let nameZh = `第${['一', '二', '三'][i]}世代`;
+    let nameZh = `第${GEN_CN[i] ?? id}世代`;
     let regionZh = REGION_FALLBACK[id];
     try {
       const g = await fetchJson(`${API}/generation/${id}`);
@@ -638,6 +640,12 @@ async function buildPokemon(speciesId, chainIdBySpecies) {
      */
     taglineZh: TAGLINE_ZH[speciesId],
     sprite: `/sprites/${speciesId}.png`,
+    /*
+     * 96px 缩略图：**卡片 / 列表这类小尺寸位置专用**。
+     * 地区图鉴的总览卡上只显示 52px，用 475px 的大图会让首屏多下约 2MB。
+     * 命名与 forms 的 thumb 一致（`{id}-thumb.png`），落在同一层目录。
+     */
+    thumb: `/sprites/${speciesId}-thumb.png`,
     colorKey: species.color?.name ?? 'normal',
     /**
      * 叫声。前端直接拿这个地址播放，**不下载到本地**（YJ 定的：走 CDN）。
@@ -785,8 +793,10 @@ async function main() {
   });
 
   await mapPool(ids, 8, async (id) => {
+    /* 大图 + 缩略图一起下；两个都命中缓存才算「已存在」 */
     const r = await download(spriteUrls(id), path.join(SPRITE_DIR, `${id}.png`));
-    process.stdout.write(r === 'cached' ? '.' : '+');
+    const t = await download(spriteUrls(id, 'thumb'), path.join(SPRITE_DIR, `${id}-thumb.png`));
+    process.stdout.write(r === 'cached' && t === 'cached' ? '.' : '+');
     return id;
   });
   process.stdout.write('\n');

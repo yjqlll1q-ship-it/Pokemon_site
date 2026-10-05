@@ -138,6 +138,20 @@ if (allAbilities.length && abilityWithDesc / allAbilities.length < 0.8) {
 const spriteFiles = (await readdir(path.join(ROOT, 'public', 'sprites'))).filter((f) =>
   f.toLowerCase().endsWith('.png'),
 );
+/*
+ * 大图与缩略图分开统计：缩略图是**新增的一整套**（每只两张），
+ * 混在一起数会让「立绘张数」直接翻倍、看不出哪边缺了。
+ * 两者都必须与宝可梦数量严格相等 —— 少一张就是某只的图没下下来。
+ */
+const artFiles = spriteFiles.filter((f) => !f.endsWith('-thumb.png'));
+const thumbFileList = spriteFiles.filter((f) => f.endsWith('-thumb.png'));
+const spriteCount = Object.keys(data.pokemon).length;
+if (artFiles.length !== spriteCount) {
+  problems.push(`本体立绘 ${artFiles.length} 张 ≠ 宝可梦 ${spriteCount} 只`);
+}
+if (thumbFileList.length !== spriteCount) {
+  problems.push(`本体缩略图 ${thumbFileList.length} 张 ≠ 宝可梦 ${spriteCount} 只（列表小图会 404）`);
+}
 const totalBytes = (
   await Promise.all(spriteFiles.map(async (f) => (await stat(path.join(ROOT, 'public', 'sprites', f))).size))
 ).reduce((a, b) => a + b, 0);
@@ -166,7 +180,9 @@ if (formFiles.length !== formCount * 2) {
 
 console.log(`进化线 ${data.lines.length} 条 / 宝可梦 ${Object.keys(data.pokemon).length} 只`);
 lines.forEach((l) => console.log('  ' + l));
-console.log(`立绘 ${spriteFiles.length} 张，合计 ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
+console.log(
+  `立绘 ${artFiles.length} 张（大图）+ ${thumbFileList.length} 张（96px 缩略图），合计 ${(totalBytes / 1024 / 1024).toFixed(1)} MB`,
+);
 console.log(
   `形态 ${formSpecies} 只带额外形态 / 共 ${formCount} 个，立绘 ${formFiles.length} 张，` +
     `合计 ${(formBytes / 1024 / 1024).toFixed(1)} MB`,

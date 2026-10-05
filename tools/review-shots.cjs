@@ -234,6 +234,16 @@ async function main() {
     await sleep(900);
     await shotEl('18-el-type-chips-on', '[data-testid="type-chips"]', 12);
 
+
+    // 11. 地区图鉴（2026-10-05 加）
+    await go(BASE + '/regions', DESKTOP[0], DESKTOP[1]);
+    await shot('19-regions');
+    await shotEl('20-el-region-card', '[data-testid="region-card"]', 10);
+    await go(BASE + '/regions/4', DESKTOP[0], DESKTOP[1]);
+    await shot('21-region-sinnoh');
+    await go(BASE + '/pokemon/445', DESKTOP[0], DESKTOP[1]);
+    await shot('22-detail-garchomp');
+
     console.log('[review-shots] 产出 ' + made.length + ' 张：');
     made.forEach((p) => console.log('  ' + path.relative(process.cwd(), p)));
     if (b.consoleErrors.length) {

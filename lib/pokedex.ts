@@ -5,7 +5,7 @@
  *
  * 用法分两条路，不要混：
  *   - 静态资料（首页「最初的伙伴」、详情弹窗的展示数据）→ 走本文件，构建期就算好；
- *   - 图鉴查询（386 只、多条件筛选）→ 走数据库，见 lib/pokedex-query.ts 与 /api/*。
+ *   - 图鉴查询（493 只、多条件筛选）→ 走数据库，见 lib/pokedex-query.ts 与 /api/*。
  *
  * 本文件**只能在服务端使用**：它 import 了全量 JSON。
  * 客户端组件要的数据一律由服务端算好后以 props 传下去，
@@ -68,8 +68,13 @@ export interface Pokemon {
    * 不登记的宝可梦就是「没有飘带」，这是正常状态而非缺数据。
    */
   taglineZh?: string;
-  /** 本地立绘路径 */
+  /** 本地立绘路径（475px 官方 artwork） */
   sprite: string;
+  /**
+   * 96px 缩略图 —— **卡片 / 列表这类小尺寸位置用它**。
+   * 与大图同一套命名（`{id}-thumb.png`），DB 侧（rowToPokemon）按同样规则派生。
+   */
+  thumb: string;
   /** 叫声地址（PokeAPI cries CDN，前端直接播放） */
   cryUrl: string;
   colorKey: string;
@@ -77,9 +82,9 @@ export interface Pokemon {
   evolvesFrom: string | null;
   /* ---- 图鉴查询相关 ---- */
   evolvesFromId: number | null;
-  /** 1 / 2 / 3；超出前三世代的进化链成员会是 4 或更大 */
+  /** 1~4；超出前四世代的进化链成员会是 5 或更大 */
   generation: number;
-  /** 是否落在前三世代（#1–386）内 */
+  /** 是否落在前四世代（#1–493）内 */
   inScope: boolean;
   chainId: number | null;
   captureRate: number | null;
@@ -167,6 +172,31 @@ export function getAllIds(): number[] {
 
 export function getGenerations(): GenerationMeta[] {
   return pokedex.generations;
+}
+
+/**
+ * 某一世代（地区）的宝可梦，按图鉴编号升序。
+ *
+ * 只取 inScope 的 —— 进化链上更高世代的成员（如伊布线上的仙子伊布 #700）
+ * 不是该地区的本土宝可梦，混进来会让「第四世代 107 只」变成 120+。
+ */
+export function getPokemonByGeneration(gen: number): Pokemon[] {
+  return Object.values(pokedex.pokemon)
+    .filter((p) => p.inScope && p.generation === gen)
+    .sort((a, b) => a.dexNumber - b.dexNumber);
+}
+
+/**
+ * 地区卡上的「代表宝可梦」：先取该世代的传说 / 幻之宝可梦（辨识度最高，
+ * 每代都有且数量稳定），不够 limit 时按编号从小到大用普通宝可梦补齐。
+ * 纯数据驱动 —— 加世代不用手工挑图。
+ */
+export function getRegionHighlights(gen: number, limit = 4): Pokemon[] {
+  const list = getPokemonByGeneration(gen);
+  const special = list.filter((p) => p.isLegendary || p.isMythical);
+  if (special.length >= limit) return special.slice(0, limit);
+  const rest = list.filter((p) => !p.isLegendary && !p.isMythical);
+  return [...special, ...rest.slice(0, limit - special.length)];
 }
 
 export function getTypes(): TypeMeta[] {

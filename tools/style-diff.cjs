@@ -105,6 +105,11 @@ function normalize(prop, v) {
 /**
  * 这些项本工具不比，因为它们的判据在别处有更强的断言。
  * 不是「忽略清单」——每一条都必须写明替代证据在哪里。
+ *
+ * 键的格式是 `段.采集点.属性`，与 compareSections 里的 `${label}.${k}.${p}` 对应。
+ * ⚠️ 目前快照里**没有** `cardHover` 段（卡片 hover 的采集点没被保留下来），
+ * 所以下面两条现在是待用状态；一旦重新加回 `cardHover` 段它们会立刻生效。
+ * 不要因为「看起来没用」就删掉 —— 它们是当初为 hover 位移/缩放写下的替代证据说明。
  */
 const NOT_COMPARABLE = new Map([
   [
@@ -156,6 +161,31 @@ function cmp(prop, a, b) {
   return false;
 }
 
+/**
+ * 宽口径相等：用于段里的**非样式采集点**（纯数字 / 字符串 / 布尔 / 数组 / 简单对象）。
+ * 例如 `regions.__thumbProbe`（缩略图尺寸数组）、`branchConds`（进化条件文案）、
+ * `noForms`（两个布尔）。这类值没有「CSS 属性」的概念，逐属性比会走偏：
+ * 数组被 Object.keys 展开成 "0"/"1"/… 下标，两个内容相同的数组因为元素是对象
+ * （引用不同）永远不相等 —— 于是产生假差异。
+ *
+ * 数字仍然给 BOX_EPS 容差，避免不同构建下的子像素取整噪声。
+ */
+function looseEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) <= BOX_EPS;
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const ka = Object.keys(a);
+    const kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && looseEqual(a[k], b[k]));
+  }
+  return false;
+}
+
+/** 是不是「一个元素的计算样式记录」——有 __box 或采到过 display 才算法 */
+const isElementRecord = (v) =>
+  !!v && typeof v === 'object' && !Array.isArray(v) && ('__box' in v || 'display' in v);
+
 function compareSections(before, after, label, out) {
   const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})]);
   for (const k of keys) {
@@ -169,6 +199,16 @@ function compareSections(before, after, label, out) {
       out.diffs.push({ at: `${label}.${k}`, prop: '(元素)', before: '存在', after: `选不到 ${B.__missing}` });
       continue;
     }
+    if (A === undefined && B === undefined) continue;
+
+    // 段里的「纯数据」：整体比，不做逐属性展开
+    if (!isElementRecord(A) || !isElementRecord(B)) {
+      if (!looseEqual(A, B)) {
+        out.diffs.push({ at: `${label}.${k}`, prop: '(整体)', before: A, after: B });
+      }
+      continue;
+    }
+
     if (!A || !B) {
       out.diffs.push({ at: `${label}.${k}`, prop: '(整块)', before: !!A, after: !!B });
       continue;
@@ -177,6 +217,12 @@ function compareSections(before, after, label, out) {
     for (const p of props) {
       const va = A[p];
       const vb = B[p];
+      // 有替代证据的项先摘出去。键的格式是 `段.采集点.属性`（不是「忽略清单」，每条都写了证据在哪）
+      const why = NOT_COMPARABLE.get(`${label}.${k}.${p}`);
+      if (why && !cmp(p, va, vb)) {
+        out.notComparable.push({ at: `${label}.${k}`, prop: p, before: va, after: vb, why });
+        continue;
+      }
       if (p === '__box') {
         if (!Array.isArray(va) || !Array.isArray(vb)) {
           out.diffs.push({ at: `${label}.${k}`, prop: p, before: va, after: vb });
@@ -243,35 +289,33 @@ function main() {
 
   const out = { diffs: [], skipped: [], invisible: [], notComparable: [], equivalent: [] };
 
-  for (const section of ['__doc', 'cardHover', 'mobile', 'mobileDialog', 'branchConds']) {
-    const A = before[section];
-    const B = after[section];
-    if (A === undefined && B === undefined) continue;
-    if (JSON.stringify(A) !== JSON.stringify(B)) {
-      const keys = new Set([...Object.keys(A || {}), ...Object.keys(B || {})]);
-      if (Array.isArray(A)) {
-        if (JSON.stringify(A) !== JSON.stringify(B)) {
-          out.diffs.push({ at: section, prop: '(整体)', before: JSON.stringify(A), after: JSON.stringify(B) });
-        }
-        continue;
-      }
-      for (const k of keys) {
-        const va = A ? A[k] : undefined;
-        const vb = B ? B[k] : undefined;
-        if (cmp(k, va, vb)) continue;
-        const why = NOT_COMPARABLE.get(`${section}.${k}`);
-        if (why) {
-          out.notComparable.push({ at: `${section}.${k}`, before: va, after: vb, why });
-          continue;
-        }
-        out.diffs.push({ at: section, prop: k, before: va, after: vb });
-      }
-    }
-  }
+  /*
+   * 段名一律**从快照里现取**，绝不在这里写死。
+   *
+   * 这里踩过一次坑：快照里的段名整体从 home/detail/branch 换成了
+   * shell/lotom/bulba/forms/evoTab/evoWide/search…，而这里的列表没跟着改，
+   * 于是 `compareSections(undefined, undefined, 'home', out)` 空转 ——
+   * Object.keys(undefined || {}) 是空集合，一条不比、一声不吭，
+   * 门禁照样打印「残余差异条数：0 / 视觉零回归」。
+   * 也就是说：**大部分采集点根本没被比过**，报告却是绿的。
+   *
+   * 所以改成动态枚举。段名是快照自己的事，diff 不该维护第二份名单。
+   */
+  const SECTIONS = [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((s) => s !== '__consoleErrors')
+    .sort();
 
-  for (const section of ['home', 'detail', 'branch']) {
+  for (const section of SECTIONS) {
     compareSections(before[section], after[section], section, out);
   }
+
+  /** 采集点总数（段内的「元素记录」个数）—— 报告里要写出「到底比了多少」，不然 0 差异没有意义 */
+  const countTargets = (snap) =>
+    SECTIONS.reduce((n, s) => {
+      const o = snap[s];
+      if (!o || typeof o !== 'object') return n;
+      return n + Object.values(o).filter(isElementRecord).length;
+    }, 0);
 
   const ea = (before.__consoleErrors || []).length;
   const eb = (after.__consoleErrors || []).length;
@@ -282,6 +326,7 @@ function main() {
   lines.push('');
   lines.push(`- 基线：\`${beforePath}\``);
   lines.push(`- 对照：\`${afterPath}\``);
+  lines.push(`- **比对覆盖：${SECTIONS.length} 段 / ${countTargets(before)} 个元素采集点**`);
   lines.push(`- **残余差异条数：${out.diffs.length}**`);
   lines.push(`- 归一化后相等（仅写法差异）：${normHits.length}`);
   lines.push(`- 判定为无影响（边框宽度为 0，肉眼不可见）：${out.invisible.length}`);
@@ -293,7 +338,9 @@ function main() {
     lines.push('| 位置 | 属性 | 改造前 | 改造后 |');
     lines.push('| --- | --- | --- | --- |');
     for (const d of out.diffs) {
-      const f = (v) => String(v).replace(/\|/g, '\\|').slice(0, 160);
+      // 值可能是数组/对象（段里的纯数据采集点），String() 会打成 [object Object]
+      const f = (v) =>
+        (v && typeof v === 'object' ? JSON.stringify(v) : String(v)).replace(/\|/g, '\\|').slice(0, 160);
       lines.push(`| ${d.at} | ${d.prop} | \`${f(d.before)}\` | \`${f(d.after)}\` |`);
     }
   } else {

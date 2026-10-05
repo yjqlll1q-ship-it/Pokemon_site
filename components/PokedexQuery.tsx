@@ -97,6 +97,23 @@ function toQueryString(f: Filters): string {
   return sp.toString();
 }
 
+/**
+ * 把浏览器抛出的网络层错误翻译成用户能看懂的话。
+ *
+ * `fetch` 拒绝时给的是 `TypeError: Failed to fetch`（Chrome）/ `NetworkError...`（Firefox）/
+ * `Load failed`（Safari）—— 这几种都不是「查询写错了」，而是「本地数据服务没在跑」。
+ * 直接把这串英文糊到界面上，用户会以为是数据被删了（真实发生过）。
+ */
+function friendlyError(raw: string): { title: string; hint: string } {
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
+    return {
+      title: '无法连接本地数据服务',
+      hint: '图鉴查询依赖本地 SQLite 接口（/api/pokedex），服务没启动时就会这样。数据本身没有丢失，重启站点服务后刷新即可。',
+    };
+  }
+  return { title: '查询失败', hint: raw };
+}
+
 /** 地址栏 → 状态（分享链接、前进后退都能还原筛选） */
 function fromSearchParams(sp: URLSearchParams): Filters {
   const list = (key: string) =>
@@ -114,7 +131,7 @@ function fromSearchParams(sp: URLSearchParams): Filters {
     types: list('types'),
     typeMode: sp.get('typeMode') === 'all' ? 'all' : 'any',
     excludeTypes: list('excludeTypes'),
-    generations: ints('generations').filter((g) => g >= 1 && g <= 3),
+    generations: ints('generations').filter((g) => g >= 1 && g <= 4),
     tags: list('tags').filter((t): t is TagKey =>
       ['legendary', 'mythical', 'baby'].includes(t),
     ),
@@ -233,6 +250,8 @@ export default function PokedexQuery() {
 
   const [view, setView] = useState<'list' | 'types'>('list');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  /** 点「重试」自增 → 触发下面两个 effect 重新取数（fetch 失败后没有别的重跑路径） */
+  const [retryTick, setRetryTick] = useState(0);
 
   const seeded = useRef(false);
 
@@ -265,6 +284,7 @@ export default function PokedexQuery() {
   /* ---- 4. 拉筛选面 ---- */
   useEffect(() => {
     let alive = true;
+    setFacetsError(null);
     fetch('/api/facets')
       .then(async (r) => {
         const body = (await r.json()) as Facets | ApiError;
@@ -276,7 +296,7 @@ export default function PokedexQuery() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [retryTick]);
 
   /* ---- 5. 查询 ---- */
   const queryString = useMemo(() => toQueryString({ ...filters, q }), [filters, q]);
@@ -301,7 +321,7 @@ export default function PokedexQuery() {
         if (!ctrl.signal.aborted) setLoading(false);
       });
     return () => ctrl.abort();
-  }, [queryString]);
+  }, [queryString, retryTick]);
 
   /* ---- 6. 点卡片 → 跳整页详情 ---- */
   /*
@@ -350,13 +370,21 @@ export default function PokedexQuery() {
   );
 
   const anyError = facetsError ?? error;
+  const errInfo = anyError ? friendlyError(anyError) : null;
+
+  const retry = useCallback(() => {
+    setFacetsError(null);
+    setError(null);
+    setLoading(true);
+    setRetryTick((n) => n + 1);
+  }, []);
 
   return (
     <>
       <section className="mb-5 flex flex-col gap-2">
         <h1 className="text-[26px] font-bold tracking-[0.01em] max-[520px]:text-[22px]">图鉴查询</h1>
         <p className="max-w-[68ch] text-[13.5px] text-ink-2">
-          覆盖第一至第三世代（全国图鉴 #{facets?.scope.min ?? 1}–#{facets?.scope.max ?? 386}，共{' '}
+          覆盖第一至第四世代（全国图鉴 #{facets?.scope.min ?? 1}–#{facets?.scope.max ?? 493}，共{' '}
           {facets?.total ?? '…'} 只）。可按属性、世代、种族值、特性、蛋群多条件组合筛选，
           结果来自本地 SQLite 数据库。
         </p>
@@ -735,14 +763,24 @@ export default function PokedexQuery() {
         <>
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-line py-2">
             <p className="text-[13px] text-ink-2" data-testid="result-count">
-              共 <b className="text-[15px] font-bold num-tabular text-ink">{data?.total ?? 0}</b> 只
-              {data && data.pageCount > 1 && (
+              {/*
+               * 取数失败时**不显示「共 0 只」**：0 是「筛出来没有」，而失败是「不知道有几只」，
+               * 两者混在一起会让人以为数据丢了（真实踩过）。失败态单独给一个说法。
+               */}
+              {errInfo ? (
+                <span className="text-ink-3">数据不可用</span>
+              ) : (
+                <>
+                  共 <b className="text-[15px] font-bold num-tabular text-ink">{data?.total ?? 0}</b> 只
+                </>
+              )}
+              {!errInfo && data && data.pageCount > 1 && (
                 <span className="ml-1 text-ink-3">
                   · 第 <span className="num-tabular">{data.page}</span> /{' '}
                   <span className="num-tabular">{data.pageCount}</span> 页
                 </span>
               )}
-              {loading && <span className="ml-2 text-[11.5px] text-ink-3">查询中…</span>}
+              {!errInfo && loading && <span className="ml-2 text-[11.5px] text-ink-3">查询中…</span>}
             </p>
 
             <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -788,13 +826,32 @@ export default function PokedexQuery() {
             </div>
           </div>
 
-          {anyError && (
-            <p
-              className="mb-3 rounded-md border border-line bg-surface-2 px-4 py-3 text-[13px] text-ink-2"
+          {errInfo && (
+            <div
+              className="mb-3 rounded-md border border-line bg-surface-2 px-4 py-3.5"
               data-testid="error"
+              role="alert"
             >
-              查询失败：{anyError}
-            </p>
+              <p className="flex items-center gap-2 text-[13.5px] font-semibold text-ink">
+                <span
+                  aria-hidden="true"
+                  className="grid size-[18px] flex-none place-items-center rounded-full bg-navy text-[11px] leading-none text-white"
+                >
+                  !
+                </span>
+                {errInfo.title}
+              </p>
+              <p className="mt-1.5 text-[12.5px] leading-[1.75] text-ink-2">{errInfo.hint}</p>
+              <p className="mt-1 text-[11.5px] break-all text-ink-3">原始信息：{anyError}</p>
+              <button
+                type="button"
+                className="mt-2.5 rounded-sm border border-line-strong bg-surface px-3 py-[5px] text-[12.5px] font-medium text-ink-2 transition-colors duration-150 hover:border-navy/40 hover:text-ink"
+                onClick={retry}
+                data-testid="retry"
+              >
+                重试
+              </button>
+            </div>
           )}
 
           {!anyError && data && data.items.length === 0 && (

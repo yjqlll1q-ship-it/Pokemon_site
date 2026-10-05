@@ -764,6 +764,71 @@ async function main() {
   );
 
 
+  /* ---------------- [5f] 地区图鉴（2026-10-05 加） ---------------- */
+  console.log('\n[5f] 地区图鉴');
+  await goto(b, '/regions');
+  /*
+   * 地区卡由 pokedex.json 的 generations 生成 —— 有几个世代就有几张卡。
+   * 断言写「恰好 4」而不是「> 0」：世代配置加了却只渲染出一张，同样是坏的。
+   */
+  const regions = await b.ev(`(() => {
+    const cards = [...document.querySelectorAll('[data-testid="region-card"]')];
+    return cards.map((c) => ({
+      id: c.getAttribute('data-region-id'),
+      name: c.querySelector('h2') ? c.querySelector('h2').textContent.trim() : '',
+      count: (c.textContent.match(/共\\s*(\\d+)\\s*只/) || [])[1] || null,
+      imgs: c.querySelectorAll('img').length,
+    }));
+  })()`);
+  check(
+    '地区图鉴渲染出 4 个地区的卡片',
+    regions.length === 4,
+    `实际 ${regions.length}：${regions.map((r) => r.name).join(' / ')}`,
+  );
+  check(
+    '每张地区卡都有地区名、计数与代表宝可梦（图片非空）',
+    regions.length > 0 && regions.every((r) => r.name && r.count && r.imgs > 0),
+    regions.map((r) => `${r.name}:${r.count}只/${r.imgs}图`).join(' '),
+  );
+  /* 关都（第一世代）恒为 151 只 —— 拿一个不会变的硬事实当锚点 */
+  check(
+    '关都地区计数正确（151 只）',
+    !!regions[0] && regions[0].count === '151',
+    String(regions[0] && regions[0].count),
+  );
+  const rg0 = await b.ev(PROBE);
+  check('侧栏高亮「地区图鉴」', rg0.railOn === '地区图鉴', rg0.railOn);
+  await b.screenshot(path.join(SHOTS, '13-regions-desktop.png'));
+
+  /* ---- 地区详情：列表数量必须与该地区总数一致 ---- */
+  await goto(b, '/regions/4');
+  const rg4 = await b.ev(`(() => {
+    const cards = document.querySelectorAll('[data-testid="region-pokemon-card"]');
+    const title = document.querySelector('[data-testid="region-title"]');
+    const count = document.querySelector('[data-testid="region-count"]');
+    const first = cards[0];
+    return {
+      title: title ? title.textContent.trim() : null,
+      cards: cards.length,
+      count: count ? (count.textContent.match(/(\\d+)/) || [])[1] : null,
+      firstId: first ? first.getAttribute('data-pokemon-id') : null,
+      firstHref: first ? first.getAttribute('href') : null,
+    };
+  })()`);
+  check('第四世代地区页标题是「神奥」', rg4.title === '神奥', String(rg4.title));
+  check(
+    '神奥地区列出全部 107 只，且与页头计数一致',
+    rg4.cards === 107 && rg4.count === '107',
+    `列表 ${rg4.cards} 张 / 页头 ${rg4.count}`,
+  );
+  check(
+    '地区内的卡片指向整页详情（href=/pokemon/[id]）',
+    !!rg4.firstHref && /^\/pokemon\/\d+$/.test(rg4.firstHref),
+    String(rg4.firstHref),
+  );
+  check('神奥首只是 #387（按编号升序）', rg4.firstId === '387', String(rg4.firstId));
+  await b.screenshot(path.join(SHOTS, '14-region-sinnoh.png'));
+
   console.log('\n[6] 图鉴查询页');
   await goto(b, '/pokedex');
   let cards = 0;

@@ -207,7 +207,7 @@ export function normalizeParams(input: SearchParams): NormalizedParams {
     types: uniq(slugArray(input.types)),
     typeMode,
     excludeTypes: uniq(slugArray(input.excludeTypes)),
-    generations: uniq(intArray(input.generations)).filter((g) => g >= 1 && g <= 3),
+    generations: uniq(intArray(input.generations)).filter((g) => g >= 1 && g <= 4),
     statTotalMin,
     statTotalMax,
     statKey,
@@ -504,7 +504,7 @@ export function getFacets(): Facets {
 
   const scope = one<{ min: number; max: number }>(
     'SELECT MIN(id) AS min, MAX(id) AS max FROM pokemon WHERE in_scope = 1',
-  ) ?? { min: 1, max: 386 };
+  ) ?? { min: 1, max: 493 };
 
   return {
     total,
@@ -593,6 +593,12 @@ function rowToPokemon(
      */
     taglineZh: row.tagline_zh == null ? undefined : String(row.tagline_zh),
     sprite: String(row.sprite),
+    /*
+     * 缩略图不在 DB 里单列一列 —— 它和 sprite 是同一套命名规则（`{id}-thumb.png`），
+     * 按 id 派生即可。写死 DB 列反而多一处要同步的地方（build-data 改了命名，
+     * 这里不跟就会 404）。
+     */
+    thumb: `/sprites/${Number(row.id)}-thumb.png`,
     cryUrl: String(row.cry_url ?? ''),
     colorKey: String(row.color ?? 'normal'),
     isBaby: Boolean(row.is_baby),

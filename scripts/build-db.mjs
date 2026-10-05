@@ -5,7 +5,7 @@
  *
  * 为什么是「JSON 先、DB 后」而不是「DB 里直接放原始数据」：
  *   1. JSON 是抓取层的产物（可读、可 diff、可当备份），DB 是查询层的产物；
- *      重新建库不碰网络，秒级完成 —— 改 schema 不用重抓 386 只宝可梦。
+ *      重新建库不碰网络，秒级完成 —— 改 schema 不用重抓 493 只宝可梦。
  *   2. 换存储（Postgres / DuckDB）时只需要换这个脚本，抓取逻辑一行不动。
  *
  * 驱动用 Node 内置的 node:sqlite（Node ≥ 22.5 自带，无需原生编译、零 npm 依赖）。
@@ -63,7 +63,7 @@ CREATE TABLE pokemon (
   name_ja         TEXT    NOT NULL DEFAULT '',
   dex_number      INTEGER NOT NULL,
   generation      INTEGER NOT NULL,
-  in_scope        INTEGER NOT NULL,          -- 1 = 前三世代（#1–386），图鉴查询默认只看这些
+  in_scope        INTEGER NOT NULL,          -- 1 = 前四世代（#1–493），图鉴查询默认只看这些
   genus_zh        TEXT    NOT NULL DEFAULT '',
   flavor_zh       TEXT    NOT NULL DEFAULT '',
   -- 宣传语（右侧信息卡的飘带）。刻意允许 NULL，与上面两列的

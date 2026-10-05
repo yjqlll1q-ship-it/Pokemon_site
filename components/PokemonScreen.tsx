@@ -210,9 +210,22 @@ export default function PokemonScreen({ pokemon, line, members }: Props) {
                 <div className="min-w-0 max-[520px]:col-span-full">
                   <dt className="text-[10.5px] text-ink-3">特性</dt>
                   <dd className="m-0 text-[13.5px] font-medium">
-                    {pokemon.abilities
-                      .map((a) => (a.hidden ? `${a.nameZh}（隐藏）` : a.nameZh))
-                      .join(' / ') || '—'}
+                    {pokemon.abilities.length ? (
+                      pokemon.abilities.map((a, i) => (
+                        /*
+                         * 「名字（隐藏）」整体不拆行：第三列窄，直接塞字符串会把
+                         * 「（隐藏）」拆成「（隐 / 藏）」两行（实测烈咬陆鲨就是这样）。
+                         * 断行只允许发生在「/」分隔处，读起来才是一组一组的。
+                         */
+                        <span key={a.slug} className="whitespace-nowrap">
+                          {i > 0 && <span className="text-ink-3"> / </span>}
+                          {a.nameZh}
+                          {a.hidden ? '（隐藏）' : ''}
+                        </span>
+                      ))
+                    ) : (
+                      '—'
+                    )}
                   </dd>
                 </div>
               </dl>
