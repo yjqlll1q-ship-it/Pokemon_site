@@ -57,7 +57,7 @@ const srcAll = sources.join('\n');
 
 const must = [
   // ---- A. 自定义 @utility（定义必须还在）----
-  'type-chip', 'badge-baby', 'tint-total', 'tint-halo', 'tint-halo-strong',
+  'type-chip', 'badge-baby', 'tint-total', 'tint-halo',
   'tint-rule', 'tint-edge', 'tint-edge-strong', 'tint-node-active',
   'art-plate', 'brand-mark', 'step-arrow', 'child-rail',
   // 外壳与主题色（重构后新增的一组）

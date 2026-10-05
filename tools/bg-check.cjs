@@ -485,6 +485,51 @@ async function main() {
     ok('[12] 分页按钮没被浮动控件挡住', moved === 1, firstBefore);
     await b.screenshot(path.join(SHOTS, 'bg-08-pokedex.png'));
 
+    /* 背景装饰的硬编码配色必须跟 token 同步 ------------------------------ */
+    /*
+     * BgDecor.tsx 里的红/蓝/深蓝是**写死**的十六进制（理由见该文件头部：
+     * 避免 var() 链在本机 Chrome 静默失效）。手工同步一定会漂 ——
+     * 2026-10-05 调整全站彩度时，token 改了而 SVG 没改的话，页面上就会留下
+     * 一整条旧的高饱和红斜带，而且没有任何东西会报错。
+     *
+     * 所以这里把两者的值拉出来逐项比：SVG 的 fill/stroke 必须等于
+     * :root 上对应的 --color-*。任一侧改了另一侧没跟，这一条就会 FAIL。
+     */
+    console.log('\n[14] 背景装饰的硬编码颜色与 token 一致');
+    const decorColors = await b.ev(
+      `(()=>{
+        const root = getComputedStyle(document.documentElement);
+        const svg = document.querySelector('svg[viewBox="0 0 1536 1010"]');
+        if (!svg) return { svg: false };
+        const used = new Set();
+        for (const el of svg.querySelectorAll('[fill],[stroke]')) {
+          for (const a of ['fill', 'stroke']) {
+            const v = el.getAttribute(a);
+            if (v && v.startsWith('#')) used.add(v.toLowerCase());
+          }
+        }
+        return {
+          svg: true,
+          used: [...used].sort(),
+          tokens: {
+            '--color-red': root.getPropertyValue('--color-red').trim().toLowerCase(),
+            '--color-blue': root.getPropertyValue('--color-blue').trim().toLowerCase(),
+            '--color-navy': root.getPropertyValue('--color-navy').trim().toLowerCase(),
+          },
+        };
+      })()`,
+    );
+    ok('[14] 找得到背景装饰 SVG', decorColors.svg === true, decorColors);
+    if (decorColors.svg) {
+      const stray = decorColors.used.filter(
+        (c) => !Object.values(decorColors.tokens).includes(c) && c !== '#ffffff',
+      );
+      ok('[14] 装饰里没有 token 之外的彩色', stray.length === 0, stray);
+      for (const [name, val] of Object.entries(decorColors.tokens)) {
+        ok(`[14] ${name} 被装饰引用（${val}）`, decorColors.used.includes(val), decorColors.used);
+      }
+    }
+
     console.log('\n[13] 控制台');
     const errs = (b.consoleErrors || []).filter((e) => !/favicon/i.test(e));
     ok('[13] 全程没有控制台报错', errs.length === 0, errs.slice(0, 5));

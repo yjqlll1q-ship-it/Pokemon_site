@@ -136,10 +136,12 @@ export default function PokemonScreen({ pokemon, line, members }: Props) {
       /*
        * 这一层要注入两组变量，缺一不可：
        *   --poke* 全站主题色（跟着 species.colorKey 走，外壳换色也靠它）
-       *   --tint  属性色（简介左侧色条、立绘光晕靠它派生）
-       * 曾经只注了 --poke*，于是 `.tint-rule` / `.tint-halo-strong` 里的
-       * color-mix(..., var(--tint)) 因为变量为空被判为非法声明，**静默**退化：
-       * 色条变成 currentColor 的灰、光晕直接 backgroundImage: none。
+       *   --tint  属性色（简介左侧色条 tint-rule、卡片立绘光晕 tint-halo 靠它派生）
+       * 曾经只注了 --poke*，于是 `.tint-rule` 里的 color-mix(..., var(--tint))
+       * 因为变量为空被判为非法声明，**静默**退化：色条变成 currentColor 的灰、
+       * 光晕直接 backgroundImage: none。
+       * 注：立绘底板（art-plate）2026-10-05 起改成素板、不再吃 --tint，
+       * 所以它那层光晕已删除；这条约束现在由 tint-rule 兜着（ui-check 有断言）。
        */
       style={{ ...pokeThemeStyle(pokemon.colorKey), ...typeTintStyle(tint) }}
       data-testid="pokemon-screen"
@@ -235,12 +237,14 @@ export default function PokemonScreen({ pokemon, line, members }: Props) {
               </div>
             </div>
 
-            {/* 立绘：参考稿里它接近卡片半宽，落在深蓝 + 主题色斜切的底板上 */}
+            {/* 立绘：参考稿里它浮在一块「素板」上 —— 暖白纸面 + 极轻的径向暗化，
+                主题色只在右上角那块斜切装饰（上面的 panel-band）里出现。
+                底板本身不再吃 --poke / --tint（2026-10-05 按参考稿改），
+                所以这里也没有那层属性色光晕了。 */}
             <div
               className="art-plate relative grid aspect-[4/5] place-items-center overflow-hidden rounded-lg max-[860px]:mx-auto max-[860px]:w-full max-[860px]:max-w-[280px]"
               data-testid="art-plate"
             >
-              <div className="tint-halo-strong absolute inset-[4%] rounded-full" aria-hidden="true" />
               <img
                 className="art-shadow relative h-auto w-[86%] object-contain"
                 src={view.sprite}

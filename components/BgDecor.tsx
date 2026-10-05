@@ -12,8 +12,12 @@
  *      会静默失效的坑。这组图形是纯静态装饰，不需要跟 --poke 主题色联动
  *      （参考稿本身就是全站统一的红蓝配色，不会因为某只宝可梦主题是绿色
  *      就把背景条纹染绿），所以颜色直接写死在 SVG 里，少一层出错的可能。
- *      如果以后 --color-red / --color-blue / --color-navy 改了配色，
- *      这里的十六进制要手动同步一次 —— 这是为可靠性做的取舍。
+ *
+ *      ⚠️ 因此这里与 globals.css 的 --color-red / --color-blue / --color-navy
+ *      是**手工同步**的（2026-10-05 从 #c2413d/#4585c4/#1f3b51 换成本套降饱和值）。
+ *      手工同步的东西一定会漂 —— 所以 `npm run bg:check` 里加了一条断言：
+ *      把这里的 fill 与 :root 上的 --color-* 逐项对比，对不上就 FAIL。
+ *      改配色时两个文件一起改，门禁会兜住漏改的那一次。
  *
  * 用 viewBox + preserveAspectRatio="xMidYMid slice" 让整组图形等比缩放铺满
  * 视口（效果类似 background-size: cover），不会随视口宽高比被拉伸变形。
@@ -40,22 +44,22 @@ export default function BgDecor() {
       <defs>
         {/* 点阵圆的重复图案：14px 网格、每格一个半径 1.6 的深蓝小圆点 */}
         <pattern id="bgDotPattern" width="14" height="14" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.6" fill="#0b3e65" fillOpacity="0.16" />
+          <circle cx="2" cy="2" r="1.6" fill="#1f3b51" fillOpacity="0.16" />
         </pattern>
       </defs>
 
       {/* 1. 顶部主红斜带：从右上角贯穿到主卡片中部，参考稿里最醒目的一条 */}
-      <polygon points="760,0 1040,0 880,420 600,420" fill="#ed1912" fillOpacity="0.92" />
+      <polygon points="760,0 1040,0 880,420 600,420" fill="#c2413d" fillOpacity="0.92" />
 
       {/* 2. 主红带下方的细红斜带：比主带窄，错开排布，不贴在一起糊成一块 */}
-      <polygon points="840,360 920,360 820,660 740,660" fill="#ed1912" fillOpacity="0.55" />
+      <polygon points="840,360 920,360 820,660 740,660" fill="#c2413d" fillOpacity="0.55" />
 
       {/* 3. 精灵球圆环：空心大圆，压在主红带上方，呼应品牌标识 */}
       <circle cx="930" cy="78" r="68" fill="none" stroke="#ffffff" strokeWidth="9" opacity="0.92" />
       <circle cx="930" cy="78" r="10" fill="#ffffff" opacity="0.92" />
 
       {/* 4. logo 右侧的细蓝双斜线（小氛围装饰） */}
-      <g stroke="#2a85df" strokeWidth="7" strokeLinecap="round" opacity="0.8">
+      <g stroke="#4585c4" strokeWidth="7" strokeLinecap="round" opacity="0.8">
         <line x1="336" y1="54" x2="372" y2="10" />
         <line x1="366" y1="78" x2="402" y2="34" />
       </g>
@@ -66,7 +70,7 @@ export default function BgDecor() {
         y1="860"
         x2="150"
         y2="806"
-        stroke="#ed1912"
+        stroke="#c2413d"
         strokeWidth="10"
         strokeLinecap="round"
         opacity="0.85"

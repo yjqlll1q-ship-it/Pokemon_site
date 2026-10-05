@@ -185,16 +185,16 @@ const PROBE = `(() => {
 
     /*
      * 属性色（--tint）的落地检查。
-     * 它曾经**没有**注入到详情页根节点，导致 .tint-rule / .tint-halo-strong
-     * 里的 color-mix(..., var(--tint)) 被判非法、静默退化：
-     * 简介左侧色条变 currentColor 的灰、立绘光晕直接 backgroundImage: none。
-     * 这两处的计算值必须单独采，才可能在下一次改坏时立刻看见。
+     * 它曾经**没有**注入到详情页根节点，导致 .tint-rule 里的
+     * color-mix(..., var(--tint)) 被判非法、静默退化：简介左侧色条变
+     * currentColor 的灰。这个计算值必须单独采，才可能在下一次改坏时立刻看见。
+     *
+     * 注：立绘底板（art-plate）2026-10-05 按参考稿改成素板，不再吃 --tint，
+     * 原来那条 plateHalo 断言（采 [data-testid=art-plate] 的子 div 的
+     * backgroundImage）随之删除 —— 元素已经不存在，留着只会变成一条
+     * 「采不到东西但照样打印 ✓」的假绿断言。
      */
     rootTint: cs ? cs.getPropertyValue('--tint').trim() : null,
-    plateHalo: (() => {
-      const e = document.querySelector('[data-testid="art-plate"] > div');
-      return e ? getComputedStyle(e).backgroundImage : null;
-    })(),
     introRule: (() => {
       const e = document.querySelector('[data-testid="detail-panel"] p');
       return e ? getComputedStyle(e).borderLeftColor : null;
@@ -423,13 +423,14 @@ async function main() {
 
   /*
    * 属性色（--tint）必须真的注入到详情页根节点。
-   * 空值不报错，只会让简介左侧色条与立绘光晕悄悄退化 —— 所以必须显式断言。
+   * 空值不报错，只会让简介左侧色条（tint-rule）悄悄退化成 currentColor 的灰 ——
+   * 所以既要断言变量有值，也要断言它派生出来的计算样式是个真颜色。
    */
   check('详情页根节点注入了属性色 --tint', !!r0.rootTint, String(r0.rootTint));
   check(
-    '立绘光晕没有退化成 none',
-    !!r0.plateHalo && r0.plateHalo !== 'none',
-    String(r0.plateHalo).slice(0, 26),
+    '简介左侧色条（--tint 派生）是实色，没有退化成灰',
+    !!r0.introRule && !/^(transparent|currentcolor)$/i.test(r0.introRule),
+    String(r0.introRule),
   );
 
   /*

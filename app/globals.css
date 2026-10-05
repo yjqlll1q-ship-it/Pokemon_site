@@ -55,32 +55,40 @@
    rounded-md / shadow-md 直接用本项目的值，而不是 Tailwind 的默认值。
    -------------------------------------------------------------------------- */
 @theme {
-  /* ---- 面（冷调蓝白体系，对齐参考稿；亮度仍压在「不晃眼」一档） ----
-     原先是莫兰迪燕麦暖灰，与参考稿的蓝白体系不是一路。现在改成：
-     卡片纯白、页面底与次级面用极浅蓝灰 —— 层次靠**冷暖和亮度**区分，
-     而不是靠加深，所以依然是浅底深字，不会晃眼。 */
-  --color-paper: #f1f4fa;
-  --color-paper-soft: #e7ecf6;
-  --color-surface: #ffffff;
-  --color-surface-2: #f4f6fb;
-  --color-line: #e2e8f2;
-  --color-line-strong: #cbd5e4;
+  /* ---- 面（暖调纸面体系，按参考稿取色；亮度仍压在「不晃眼」一档） ----
+     【2026-10-05 口径变更】上一版是冷调蓝白（paper #f1f4fa / line #e2e8f2），
+     参考稿实际是暖调纸面：页面底 #fffdf9、卡片 #fffdf9、次级面 #edeae1、
+     描边 #e2ddd2。冷调那版在真机上偏「屏幕感」，与参考稿的纸张质感对不上。
 
-  /* ---- 字（由品牌深蓝 #003A70 去饱和而来，保证长文可读） ---- */
+     层次仍然靠**冷暖和亮度**区分（现在是「更暖、稍暗」而不是「更蓝」）：
+     卡片最亮（近白暖），页面底暖一档，次级面（小卡 / chip）再暖一档，
+     描边取参考稿的 #e2ddd2 同一档 —— 所以依然是浅底深字，不会晃眼。
+     文字色不动：参考稿的正文就是 #25313d，与本站的 ink 三档完全一致。 */
+  --color-paper: #f6f3eb;
+  --color-paper-soft: #edeae1;
+  --color-surface: #fffdf9;
+  --color-surface-2: #f4f1ea;
+  --color-line: #e6e1d6;
+  --color-line-strong: #d2cbbd;
+
+  /* ---- 字（由品牌深蓝 #003A70 去饱和而来，保证长文可读）
+     2026-10-05 复核：参考稿的正文 / 次级文字取色就是 #25313d / #5a6673，
+     与本组完全一致，故不做改动。 ---- */
   --color-ink: #25313d;
   --color-ink-2: #5a6673;
   --color-ink-3: #8a929c;
 
- /* ---- 品牌色（官方色相，高饱和；2026-09-29 与属性色/主题色同一口径） ----
+ /* ---- 品牌色（官方色相，中彩度） ----
      这一组是 logo 精灵球、外壳底、焦点环的色源，属于「标识性用色」，
-     允许比正文配色鲜艳。色相锁官方，饱和度 74%~90%。
-     注：--color-navy 仍然压到 L22% 的深蓝 —— 它要托住一整屏的白色卡片，
-     提到官方 #003A70 的 L22% 同一档是正确的，但 S 没给到 100%
-     （100% 在深色底上会显出「电子蓝」的荧光感，与冷调蓝白体系不搭）。 */
-  --color-navy: #0b3e65; /* ← #003A70 S80%（比上一版更蓝、更贴官方色相） */
-  --color-blue: #2a85df; /* ← #3D7DCA S74% */
-  --color-yellow: #f3c716; /* ← #FFCB05 S90% */
-  --color-red: #ed1912; /* ← #EE1515 S86%，参考稿那个红斜切块就是这个档 */
+     允许比正文配色鲜艳 —— 但 2026-10-05 起从 S74%~90% 收到 **S52%**：
+     参考稿通篇是中低彩度，精灵球也要跟着收，否则侧栏那 30px 的球
+     是全站唯一一处还在「发光」的地方。色相仍然锁官方。
+     注：--color-navy 压到 L22%、S45% —— 它要托住一整屏的白色卡片，
+     深色档不能亮；S 再往上会显出「电子蓝」的荧光感，与纸面体系不搭。 */
+  --color-navy: #1f3b51; /* ← #003A70 S45% */
+  --color-blue: #4585c4; /* ← #3D7DCA S52% */
+  --color-yellow: #c4ab45; /* ← #FFCB05 S52% */
+  --color-red: #c2413d; /* ← #EE1515 S52% */
 
   /* ---- 形体 ---- */
   --radius-sm: 8px;
@@ -124,53 +132,65 @@
 :root {
   --focus-ring: color-mix(in srgb, var(--color-navy) 55%, transparent);
 
- /* 18 种属性，官方色相高饱和；只在这里维护一次。
+ /* 18 种属性，官方色相、**中低彩度**；只在这里维护一次。
      色相与 Bulbapedia 官方属性色逐项对齐（脚本校验偏差 ≤ 3°）；
      饱和度分组见文件头「口径变更」一节。
-     括号里是官方原色，便于回溯「这个色是从哪来的」。 */
+     括号里是官方原色，便于回溯「这个色是从哪来的」。
+
+     【2026-10-05 口径变更】上一版把有色相的 13 项提到 S80%~90%，真机上
+     整页「过曝」（大色块尤其刺眼）。现在统一收到 **S44%**：色相、亮度都不动，
+     只把彩度砍半 —— 这样层次关系（谁比谁深）与已有的对比度结论全部保持有效。
+     真正低彩度的 4 项（normal / ghost / dark / steel）保留官方值不再往下压，
+     它们本来就是灰调；rock 官方 S54%，跟 44% 只差一档，一并收到 44% 免得
+     变成彩度最高的那个。 */
   --type-normal: #9c9b68; /* ← #A8A77A 低彩度组：保留官方 S21% */
-  --type-fire: #f1791e; /* ← #EE8130 S88% */
-  --type-water: #1e5feb; /* ← #6390F0 S84% */
-  --type-electric: #f2c40d; /* ← #F7D02C S90% */
-  --type-grass: #57ce12; /* ← #7AC74C S84% */
-  --type-ice: #23e7dd; /* ← #96D9D6 S80% */
-  --type-fighting: #d81913; /* ← #C22E28 S84% */
-  --type-poison: #cc14c9; /* ← #A33EA1 S82% */
-  --type-ground: #e8ad17; /* ← #E2BF65 S82% */
-  --type-flying: #7143ef; /* ← #A98FF3 S84% */
-  --type-psychic: #f33f75; /* ← #F95587 S88% */
-  --type-bug: #aec313; /* ← #A6B91A S82% */
-  --type-rock: #b9a337; /* ← #B6A136 低彩度组：保留官方 S54% */
+  --type-fire: #bc8053; /* ← #EE8130 S44% */
+  --type-water: #4f71ba; /* ← #6390F0 S44% */
+  --type-electric: #b8a147; /* ← #F7D02C S44% */
+  --type-grass: #63a13f; /* ← #7AC74C S44% */
+  --type-ice: #4fbbb5; /* ← #96D9D6 S44% */
+  --type-fighting: #a94542; /* ← #C22E28 S44% */
+  --type-poison: #a13fa0; /* ← #A33EA1 S44% */
+  --type-ground: #b89847; /* ← #E2BF65 S44% */
+  --type-flying: #846cc6; /* ← #A98FF3 S44% */
+  --type-psychic: #c66c87; /* ← #F95587 S44% */
+  --type-bug: #8f9a3c; /* ← #A6B91A S44% */
+  --type-rock: #ad9b43; /* ← #B6A136 官方 S54% → 收到 44%（见上） */
   --type-ghost: #715695; /* ← #735797 低彩度组：保留官方 S27% */
-  --type-dragon: #5516f3; /* ← #6F35FC S90% */
+  --type-dragon: #6d4fba; /* ← #6F35FC S44% */
   --type-dark: #715847; /* ← #705746 低彩度组：保留官方 S23% */
   --type-steel: #7979a4; /* ← #B7B7CE 低彩度组：保留官方 S19% */
-  --type-fairy: #ef4d9e; /* ← #D685AD S84% */
+  --type-fairy: #c9739e; /* ← #D685AD S44% */
 
- /* 属性色的「压白字」档：主色是高饱和中间调，13px 白字压上去普遍不达标
-     （实测：电 1.66、冰 1.55、虫 1.98、地面 2.02、草 2.05 —— 都要 4.5）。
+ /* 属性色的「压白字」档：主色是中间调，13px 白字压上去普遍不达标
+     （2026-10-05 复算：降饱和前实测 电 1.66、冰 1.55、虫 1.98、地面 2.02、
+     草 2.05 —— 都要 4.5）。
      这一组是**不掺色**的固定深色，用于需要「固定深底 + 白字」的场景。
      注意：type-chip-solid / type-chip-on 走的是另一条路（从主色现场 color-mix 掺深，
-     掺 44%，全档 ≥4.88），不引用这一组 —— 因为那两处要保住「是哪个属性」的色相，
-     用固定深色会把 18 个属性压成同一种灰。 */
+     掺 44%），不引用这一组 —— 因为那两处要保住「是哪个属性」的色相，
+     用固定深色会把 18 个属性压成同一种灰。
+
+     降饱和会**同时改变亮度**（同 L 下越灰、相对亮度越高、白字对比度越低），
+     所以 2026-10-05 逐项复算了白字对比度，并把不足 5.0 的两项（水、飞行）
+     往下压了一两档亮度。当前最低 5.06（psychic），全部 ≥5.0。 */
   --type-normal-deep: #706f3e; /* 白字 5.21 */
-  --type-fire-deep: #b45004; /* 白字 5.13 */
-  --type-water-deep: #145bf5; /* 白字 5.46 */
-  --type-electric-deep: #826803; /* 白字 5.34 */
-  --type-grass-deep: #327f05; /* 白字 5.03 */
-  --type-ice-deep: #087872; /* 白字 5.33 */
-  --type-fighting-deep: #dc1009; /* 白字 5.1 */
-  --type-poison-deep: #c20abf; /* 白字 5.13 */
-  --type-ground-deep: #8d6707; /* 白字 5.15 */
-  --type-flying-deep: #6d3bf7; /* 白字 5.8 */
-  --type-psychic-deep: #dc0445; /* 白字 5.06 */
-  --type-bug-deep: #677406; /* 白字 5.15 */
-  --type-rock-deep: #7c6c1d; /* 白字 5.22 */
+  --type-fire-deep: #845634; /* 白字 6.25 */
+  --type-water-deep: #486bb7; /* 白字 5.17 */
+  --type-electric-deep: #605425; /* 白字 7.52 */
+  --type-grass-deep: #3a5f25; /* 白字 7.39 */
+  --type-ice-deep: #245c59; /* 白字 7.64 */
+  --type-fighting-deep: #a54340; /* 白字 6.04 */
+  --type-poison-deep: #933991; /* 白字 6.49 */
+  --type-ground-deep: #6b5829; /* 白字 6.88 */
+  --type-flying-deep: #785dc0; /* 白字 5.09 */
+  --type-psychic-deep: #a13f5c; /* 白字 6.21 */
+  --type-bug-deep: #515822; /* 白字 7.58 */
+  --type-rock-deep: #6e632b; /* 白字 6.03 */
   --type-ghost-deep: #704c9e; /* 白字 6.53 */
-  --type-dragon-deep: #520ffa; /* 白字 7.48 */
+  --type-dragon-deep: #6d4fba; /* 白字 6.04 */
   --type-dark-deep: #78563f; /* 白字 6.56 */
   --type-steel-deep: #6767a8; /* 白字 5.14 */
-  --type-fairy-deep: #d70970; /* 白字 5.05 */
+  --type-fairy-deep: #a13f70; /* 白字 6.07 */
 
   /* 未知属性回退到中性灰，保证不会出现空样式 */
   --type-fallback: var(--type-normal);
@@ -186,16 +206,20 @@
      这六色若不动就落到 S 45%~71% —— 能力值条会比属性标签更灰，出现**层次倒挂**
      （次要元素比主要元素更抢眼）。所以同步提到 S 76%~80%，与属性色同量级。
 
+     【2026-10-05 口径变更】属性色收到 S44% 后，这六色同步收到 S44% —— 「同量级」
+     这条口径没变，变的是那个量级。只降彩度、不动亮度，所以六条之间的深浅关系
+     与「防倒挂」的结论都还成立。
+
      仍然**不是**属性色的别名：色相是这六条自己的
      （红 5° / 橙 29° / 黄 43° / 青绿 166° / 蓝 212° / 紫 262°），
      只服务能力值条这一个场景，不参与属性 badge 与主题色。
      -------------------------------------------------------------------------- */
-  --stat-hp: #e43525; /* 红 ← #dc5b4e */
-  --stat-attack: #e48125; /* 橙 ← #e08f45 */
-  --stat-defense: #e6ac19; /* 黄 ← #d5a93a */
-  --stat-spAttack: #1ccea5; /* 青绿 ← #3fa88f */
-  --stat-spDefense: #257ee4; /* 蓝 ← #4f8dd4 */
-  --stat-speed: #7737e6; /* 紫 ← #8f6ccb */
+  --stat-hp: #ba584f; /* 红 ← #dc5b4e */
+  --stat-attack: #ba834f; /* 橙 ← #e08f45 */
+  --stat-defense: #b89847; /* 黄 ← #d5a93a */
+  --stat-spAttack: #42a891; /* 青绿 ← #3fa88f */
+  --stat-spDefense: #4f81ba; /* 蓝 ← #4f8dd4 */
+  --stat-speed: #815dc0; /* 紫 ← #8f6ccb */
   --stat-fallback: var(--type-normal);
 
  /* --------------------------------------------------------------------------
@@ -209,16 +233,24 @@
      绿 / 棕 / 紫 / 粉）提到 S 74%~82%；近中性的 3 色（黑 / 灰 / 白）**不引入明显色相**，
      只按亮度阶梯区分 —— 它们的「身体色」本来就是灰阶，硬加彩度会让黑变蓝紫、白变蓝。
 
+     【2026-10-05 口径变更】与属性色同步降回来：有色相的 7 色收到 **S44%**。
+     这一组是全站最显眼的色源（立绘底板、Tab 选中态、侧栏选中项、飘带、
+     实心按钮都吃它），也是「过曝」最直接的来源。色相与亮度都不动。
+     参考稿的真值：伊布那页的 accent（叫一声按钮 / 进化链选中 Tab / 右上角
+     斜切块）是 #7b5731 = hsl(31,43%,34%)，而本站原值 --poke-brown-deep 是
+     #a05c18 = hsl(30,74%,36%) —— 同色相同亮度，只有饱和度差一倍。
+     按「H/L 不动、S→44%」换算得 #845c34，与参考稿同一档。这条换算就是
+     本次调整的依据，其它 9 色用的是同一条规则。
+
      每色四档：
        --poke-<k>       主色：装饰色块、斜切底纹（**不做文字底**，见下）
        --poke-<k>-hi    亮色：渐变上端、悬停
        --poke-<k>-deep  深色：**实心按钮 / 选中态的底**、斜切收尾、深底上的字
        --poke-<k>-soft  浅底：面板底、标签底
 
-     为什么实心按钮用 deep 而不是主色：主色是高饱和中间调，白字压上去不达标
-     （实测 13px 白字对比度：电 1.66、冰 1.55、虫 1.98、地面 2.02、草 2.05、
-     黄 1.91、白 2.04 —— 都要 4.5 才过 AA）。deep 档全部 ≥5.0，逐色实测值
-     写在每一行后面的注释里，改色时顺手复算。
+     为什么实心按钮用 deep 而不是主色：主色是中间调，白字压上去不达标
+     （降饱和前实测 13px 白字对比度：黄 1.91、白 2.04 等 —— 都要 4.5 才过 AA）。
+     deep 档全部 ≥5.0，逐色实测值写在每一行后面的注释里，改色时顺手复算。
 
      近中性的黑 / 灰 / 白三色，deep 档**刻意用无彩度灰阶**而不是各自色相压深：
      按色相压深会得到「黑的 deep 变蓝紫（#404059）、白的 deep 变蓝（#5C6F8A）」，
@@ -229,25 +261,25 @@
      --poke-deep / --poke-soft（见 lib/themeColors.ts）—— 换色只改这里一处。
      注：「白色」这类本体色若照原样用会读不清，主色档刻意压深到中灰。
      -------------------------------------------------------------------------- */
-  --poke-red: #e42e21; /* ← #d2544c S78% */
-  --poke-red-hi: #eb655c;
-  --poke-red-deep: #c82419; /* 白字 5.64 */
-  --poke-red-soft: #fdeceb;
+  --poke-red: #b9534c; /* ← #d2544c S44% */
+  --poke-red-hi: #cc807b;
+  --poke-red-deep: #a2453f; /* 白字 6.07 */
+  --poke-red-soft: #f9f0ef;
 
-  --poke-blue: #1f76e0; /* ← #4a7fc1 S76% */
-  --poke-blue-hi: #5999e8;
-  --poke-blue-deep: #1a65c1; /* 白字 5.71 */
-  --poke-blue-soft: #ebf3fc;
+  --poke-blue: #477ab8; /* ← #4a7fc1 S44% */
+  --poke-blue-hi: #779cca;
+  --poke-blue-deep: #3d699e; /* 白字 5.66 */
+  --poke-blue-soft: #eef3f9;
 
-  --poke-yellow: #e8b417; /* ← #c9a63a S82% */
-  --poke-yellow-hi: #eec753;
-  --poke-yellow-deep: #87680d; /* 白字 5.23 */
-  --poke-yellow-soft: #fdf8ea;
+  --poke-yellow: #b89c47; /* ← #c9a63a S44% */
+  --poke-yellow-hi: #cab577;
+  --poke-yellow-deep: #6b5a29; /* 白字 6.73 */
+  --poke-yellow-soft: #f9f6ee;
 
-  --poke-green: #31c31d; /* ← #5f9e57 S74% */
-  --poke-green-hi: #53e240;
-  --poke-green-deep: #1f7c13; /* 白字 5.32 */
-  --poke-green-soft: #ecfaeb;
+  --poke-green: #4ba13f; /* ← #5f9e57 S44% */
+  --poke-green-hi: #6cc161;
+  --poke-green-deep: #2f6728; /* 白字 6.79 */
+  --poke-green-soft: #eef8ed;
 
   /* 近中性：主色只带极弱冷调，四档靠亮度区分 */
   --poke-black: #474752;
@@ -255,25 +287,25 @@
   --poke-black-deep: #26262c; /* 白字 15.04 */
   --poke-black-soft: #eeeeef;
 
-  --poke-brown: #c8731e; /* ← #a4794d S74% */
-  --poke-brown-hi: #e39445;
-  --poke-brown-deep: #a05c18; /* 白字 5.2 */
-  --poke-brown-soft: #faf2eb;
+  --poke-brown: #a67340; /* ← #a4794d S44% */
+  --poke-brown-hi: #c39465;
+  --poke-brown-deep: #845c34; /* 白字 5.90 */
+  --poke-brown-soft: #f8f2ed;
 
-  --poke-purple: #7828e2; /* ← #8a6cb0 S76% */
-  --poke-purple-hi: #9d62ea;
-  --poke-purple-deep: #651bc5; /* 白字 8.35 */
-  --poke-purple-soft: #f3ecfc;
+  --poke-purple: #7d4fbb; /* ← #8a6cb0 S44% */
+  --poke-purple-hi: #a17fcd;
+  --poke-purple-deep: #6a3fa1; /* 白字 7.40 */
+  --poke-purple-soft: #f3eff9;
 
   --poke-gray: #808893;
   --poke-gray-hi: #a4aab2;
   --poke-gray-deep: #3f434a; /* 白字 9.94 */
   --poke-gray-soft: #f4f4f5;
 
-  --poke-pink: #e94984; /* ← #cd7c9a S78% */
-  --poke-pink-hi: #f084ac;
-  --poke-pink-deep: #d11a5d; /* 白字 5.23 */
-  --poke-pink-soft: #fdeff4;
+  --poke-pink: #c66c8d; /* ← #cd7c9a S44% */
+  --poke-pink-hi: #d89cb2;
+  --poke-pink-deep: #a94268; /* 白字 5.73 */
+  --poke-pink-soft: #faf2f5;
 
   --poke-white: #b0b6bf;
   --poke-white-hi: #d2d5da;
@@ -363,17 +395,26 @@
 
 /* --- B/C：自绘图形与渐变 --- */
 
-/* 详情页立绘底板：以主题色为主色的亮色斜切（参考稿的做法 —— 立绘浮在
-   整块主题色上，一道深一档的同色相斜切做层次；不再是深蓝底）。
-   全部取 --poke 系变量，10 种 colorKey 自动跟着换，数据驱动零维护。 */
+/* 详情页立绘底板（2026-10-05 按参考稿重做）。
+   上一版是「整块 --poke 主色 + 一道 --poke-deep 斜切」。饱和度提到 80% 之后
+   那块颜色成了全页面积最大的刺眼色块 —— 这就是「过曝」的主因。
+
+   参考稿里的底板其实是一块**素板**：暖白纸面 + 极轻的径向暗化（中心最亮、
+   四角略暖），立绘直接浮在上面；主题色只在**右上角那一小块斜切装饰**里出现
+   （那块的实现是 panel-band，见 3c 节）。
+
+   所以这里彻底去掉 --poke：底板不再随宝可梦换色，换色交给 panel-band /
+   Tab 选中态 / 侧栏选中项 / 实心按钮这些**小面积**的地方 —— 面积小，
+   色相照样一眼看得出来，但不会一整块糊在脸上。 */
 @utility art-plate {
-  background-color: var(--poke);
-  background-image: linear-gradient(
-    118deg,
-    transparent 0 54%,
-    color-mix(in srgb, var(--poke-deep) 92%, transparent) 54% 70%,
-    transparent 70%
+  background-color: var(--color-surface);
+  background-image: radial-gradient(
+    118% 104% at 50% 36%,
+    #ffffff 0%,
+    var(--color-surface) 48%,
+    var(--color-paper) 100%
   );
+  box-shadow: var(--shadow-sm);
 }
 
 /* 侧栏的精灵球标识：纯 CSS 画（红 → 深色带 → 白 + 中心点），不占图片资源。
@@ -637,16 +678,6 @@
   );
 }
 
-/* 详情页大立绘的光晕：同一配方的更强一档 */
-@utility tint-halo-strong {
-  background-image: radial-gradient(
-    circle at 50% 56%,
-    color-mix(in srgb, var(--tint) 26%, transparent) 0%,
-    color-mix(in srgb, var(--tint) 10%, transparent) 45%,
-    transparent 70%
-  );
-}
-
 /* 图鉴说明块左侧的色条 */
 @utility tint-rule {
   border-left-color: color-mix(in srgb, var(--tint) 45%, var(--color-line));
@@ -692,7 +723,14 @@
 @utility app-frame {
   position: relative;
   background-color: var(--color-paper);
-  background-image: linear-gradient(135deg, #ffffff 0%, var(--color-paper) 55%, var(--color-paper-soft) 100%);
+  /* 三段都取 token：左上角最亮、右下角最暖。原来第一段写死 #ffffff，
+     换成暖调纸面体系后那个纯白角就成了一块「冷斑」（2026-10-05）。 */
+  background-image: linear-gradient(
+    135deg,
+    var(--color-surface) 0%,
+    var(--color-paper) 55%,
+    var(--color-paper-soft) 100%
+  );
 }
 
 /* 左侧竖导航条：2026-10 第四轮从「深蓝实色」改成「白色悬浮卡」，
@@ -785,9 +823,14 @@
   box-shadow: var(--shadow-sm);
 }
 
-* 主面板顶部主题色斜切头（参考图的红色斜切块） */
+/* 主面板右上角的主题色斜切块（就是参考图里立绘背后露出那一角）。
+   参考稿里它是**单色**的（伊布那页实测 #7b5731，正是 --poke-deep 档），
+   没有第二条色阶。所以从原来的「主色 0~56% + 深色 56~100%」两段式改成整块 deep：
+   低饱和下两段式几乎看不出层次，反而在块中间留一条没来由的竖分界。
+   （2026-10-05 之前的 art-plate 就是靠这两段色堆出「大面积主题色」的，
+   现在 art-plate 已经改成素板，这里的面积也跟着参考稿收窄。） */
 @utility panel-band {
-  background-image: linear-gradient(102deg, var(--poke) 0 56%, var(--poke-deep) 56% 100%);
+  background-color: var(--poke-deep);
 }
 
 /* 右侧信息卡顶部的「宣传飘带」（参考图里那条红色斜切角标）。
@@ -862,7 +905,7 @@
   font-weight: 700;
 }
 
-* 标题栏左侧的圆形图标底。
+/* 标题栏左侧的圆形图标底。
    底色用 --poke-deep 而不是 --poke：这是本站「实心底一律用 deep 档」的统一口径，
    主色是高饱和的中间调（见 :root 的 --poke-* 注释），白图形压在黄 / 灰 / 白档上按不住。 */
 @utility panel-icon {

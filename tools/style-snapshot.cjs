@@ -81,7 +81,6 @@ const DETAIL = [
   ['factsDt', '[data-testid="facts"] > div > dt'],
   ['factsDd', '[data-testid="facts"] > div > dd'],
   ['artPlate', '[data-testid="art-plate"]'],
-  ['artHalo', '[data-testid="art-plate"] > div'],
   ['art', '[data-testid="art-plate"] img'],
   ['cryBtn', '[data-testid="cry-button"]'],
   ['tabbar', '[data-testid="tabbar"]'],
@@ -190,17 +189,19 @@ const REGION_DETAIL = [
  * 主题色 / 属性色的落地检查。
  *
  * `--tint` 曾经**没有**注入到详情页根节点上，于是所有依赖它的 @utility 都静默退化
- * （简介左侧色条落到 currentColor 的灰、立绘光晕直接 backgroundImage: none）。
- * 这两处的计算值单独采出来，才可能在下一次被改回去时立刻看见。
+ * （简介左侧色条落到 currentColor 的灰）。这一处的计算值单独采出来，
+ * 才可能在下一次被改回去时立刻看见。
+ *
+ * 注：原来还采了 `[data-testid="art-plate"] > div` 的 backgroundImage（立绘光晕）。
+ * 2026-10-05 立绘底板按参考稿改成素板、不再吃 --tint，那层光晕已删除，
+ * 采集点一并移除 —— 留着会变成 `{__missing}` 之后被当成「已跳过」，看不出问题。
  */
 const TINT_PROBE = `(() => {
   const screen = document.querySelector('[data-testid="pokemon-screen"]');
   const intro = document.querySelector('[data-testid="detail-panel"] p');
-  const halo = document.querySelector('[data-testid="art-plate"] > div');
   return {
     tint: screen ? getComputedStyle(screen).getPropertyValue('--tint').trim() : null,
     introRule: intro ? getComputedStyle(intro).borderLeftColor : null,
-    haloImage: halo ? getComputedStyle(halo).backgroundImage.slice(0, 80) : null,
   };
 })()`;
 
@@ -371,12 +372,20 @@ async function main() {
 
   console.log('written: ' + OUT);
   console.log('console errors: ' + errs.length);
-  console.log('targets: shell=' + Object.keys(snap.shell).length +
-    ' lotom=' + Object.keys(snap.lotom).length +
-    ' bulba=' + Object.keys(snap.bulba).length +
-    ' forms=' + Object.keys(snap.forms).length +
-    ' branch=' + Object.keys(snap.branch).length +
-    ' evoWide=' + Object.keys(snap.evoWide).length);
+  // 段名从快照动态枚举，不要写死 —— 写死的清单会随快照增段而失真，
+  // 让人误以为「只采了这几段」（style-diff.cjs 就曾因写死段名长期空转）。
+  const covered = Object.entries(snap)
+    .filter(([k]) => k !== '__consoleErrors')
+    .map(([k, v]) => k + '=' + (Array.isArray(v) ? '[len ' + v.length + ']' : Object.keys(v).length));
+  // 元素采集点计数必须与 style-diff.cjs 的 countTargets 同口径（isElementRecord），
+  // 否则两个脚本会打印互相矛盾的数字。
+  const isElementRecord = (v) =>
+    !!v && typeof v === 'object' && !Array.isArray(v) && ('__box' in v || 'display' in v);
+  const totalPoints = Object.entries(snap)
+    .filter(([k]) => k !== '__consoleErrors')
+    .reduce((n, [, v]) => n + Object.values(v || {}).filter(isElementRecord).length, 0);
+  console.log('targets: ' + covered.join(' '));
+  console.log('覆盖: ' + covered.length + ' 段 / ' + totalPoints + ' 个元素采集点');
   if (missing.length) {
     console.log('\n!! 落空的采集点（选择器已失效，快照会假绿）:');
     for (const m of missing) console.log('   - ' + m);
